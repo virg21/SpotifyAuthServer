@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
+import LoadersDemo from "@/pages/loaders-demo";
 import Navigation from "@/components/navigation";
 
 function Router() {
@@ -12,6 +13,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/loaders" component={LoadersDemo} />
       {/* Future routes */}
       {/* <Route path="/auth" component={Authentication} /> */}
       {/* <Route path="/api-routes" component={ApiRoutes} /> */}

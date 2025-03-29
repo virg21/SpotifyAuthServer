@@ -79,10 +79,19 @@ export default {
             height: "0",
           },
         },
+        "music-wave": {
+          "0%, 100%": {
+            height: "40%",
+          },
+          "50%": {
+            height: "100%",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "music-wave": "music-wave 1s ease-in-out infinite",
       },
     },
   },

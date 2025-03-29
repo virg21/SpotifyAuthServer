@@ -41,6 +41,17 @@ export const Navigation: FC = () => {
                   Dashboard
                 </Button>
               </Link>
+              <Link href="/loaders">
+                <Button 
+                  variant={isActive("/loaders") ? "default" : "ghost"}
+                  className={cn(
+                    "rounded-md px-3 py-2 text-sm font-medium",
+                    isActive("/loaders") ? "bg-primary text-white" : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  Loaders
+                </Button>
+              </Link>
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -74,6 +85,17 @@ export const Navigation: FC = () => {
               )}
             >
               Dashboard
+            </Button>
+          </Link>
+          <Link href="/loaders">
+            <Button 
+              variant={isActive("/loaders") ? "default" : "ghost"}
+              className={cn(
+                "w-full justify-start rounded-md px-3 py-2 text-base font-medium",
+                isActive("/loaders") ? "bg-primary text-white" : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              Loaders
             </Button>
           </Link>
         </div>
