@@ -1,7 +1,7 @@
 import { 
   users, type User, type InsertUser, 
-  type MusicSummary, type Event, type VerificationCode,
-  musicSummaries, events, verificationCodes
+  type MusicSummary, type Event, type VerificationCode, type Playlist,
+  musicSummaries, events, verificationCodes, playlists
 } from "@shared/schema";
 
 export interface IStorage {
@@ -43,6 +43,14 @@ export interface IStorage {
   searchEvents(query: string, limit?: number): Promise<Event[]>;
   getEventsByGenre(genre: string): Promise<Event[]>;
   getUpcomingEvents(days?: number): Promise<Event[]>;
+  
+  // Playlist methods
+  getPlaylistById(id: number): Promise<Playlist | undefined>;
+  getPlaylistsByUserId(userId: number): Promise<Playlist[]>;
+  getPlaylistsByEventId(eventId: number): Promise<Playlist[]>;
+  createPlaylist(playlist: Omit<Playlist, 'id'>): Promise<Playlist>;
+  updatePlaylist(id: number, playlistData: Partial<Playlist>): Promise<Playlist | undefined>;
+  deletePlaylist(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -50,20 +58,24 @@ export class MemStorage implements IStorage {
   private musicSummaries: Map<number, MusicSummary>;
   private verificationCodes: Map<number, VerificationCode>;
   private events: Map<number, Event>;
+  private playlists: Map<number, Playlist>;
   private userId: number;
   private musicSummaryId: number;
   private verificationCodeId: number;
   private eventId: number;
+  private playlistId: number;
 
   constructor() {
     this.users = new Map();
     this.musicSummaries = new Map();
     this.verificationCodes = new Map();
     this.events = new Map();
+    this.playlists = new Map();
     this.userId = 1;
     this.musicSummaryId = 1;
     this.verificationCodeId = 1;
     this.eventId = 1;
+    this.playlistId = 1;
   }
 
   // User methods
@@ -300,6 +312,43 @@ export class MemStorage implements IStorage {
         return event.date >= now && event.date <= futureDate;
       })
       .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
+
+  // Playlist methods
+  async getPlaylistById(id: number): Promise<Playlist | undefined> {
+    return this.playlists.get(id);
+  }
+
+  async getPlaylistsByUserId(userId: number): Promise<Playlist[]> {
+    return Array.from(this.playlists.values()).filter(
+      playlist => playlist.userId === userId
+    );
+  }
+
+  async getPlaylistsByEventId(eventId: number): Promise<Playlist[]> {
+    return Array.from(this.playlists.values()).filter(
+      playlist => playlist.eventId === eventId
+    );
+  }
+
+  async createPlaylist(playlistData: Omit<Playlist, 'id'>): Promise<Playlist> {
+    const id = this.playlistId++;
+    const playlist: Playlist = { ...playlistData, id, createdAt: new Date() };
+    this.playlists.set(id, playlist);
+    return playlist;
+  }
+
+  async updatePlaylist(id: number, playlistData: Partial<Playlist>): Promise<Playlist | undefined> {
+    const playlist = this.playlists.get(id);
+    if (!playlist) return undefined;
+    
+    const updatedPlaylist = { ...playlist, ...playlistData, updatedAt: new Date() };
+    this.playlists.set(id, updatedPlaylist);
+    return updatedPlaylist;
+  }
+
+  async deletePlaylist(id: number): Promise<boolean> {
+    return this.playlists.delete(id);
   }
 }
 

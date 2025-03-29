@@ -1,185 +1,159 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
+import { emailService } from '../utils/emailService';
+import { verifyCodeSchema } from '../../shared/schema';
 import { z } from 'zod';
-import { sendVerificationEmail } from '../utils/emailService';
-
-// Email validation schema
-const emailSchema = z.object({
-  email: z.string().email()
-});
-
-// Verification code schema
-const verifyCodeSchema = z.object({
-  email: z.string().email(),
-  code: z.string().min(6).max(6)
-});
 
 /**
- * Generate a random 6-digit verification code
+ * Generate and send verification code to user's email
+ * @route POST /api/auth/email/send-verification
  */
-function generateVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-/**
- * Send email verification code
- * @route POST /api/email/verify
- */
-export const sendVerification = async (req: Request, res: Response) => {
+export const sendVerificationCode = async (req: Request, res: Response) => {
   try {
-    // Validate email
-    const validation = emailSchema.safeParse(req.body);
+    // Validate request body
+    const emailSchema = z.object({
+      email: z.string().email()
+    });
     
-    if (!validation.success) {
+    const validationResult = emailSchema.safeParse(req.body);
+    if (!validationResult.success) {
       return res.status(400).json({
-        success: false,
         message: 'Invalid email address',
-        errors: validation.error.errors
+        errors: validationResult.error.errors
       });
     }
     
-    const { email } = validation.data;
+    const { email } = validationResult.data;
     
-    // Check if email already exists and is verified
-    const existingUser = await storage.getUserByEmail(email);
+    // Check if user exists with this email
+    const user = await storage.getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({
+        message: 'No user found with this email address'
+      });
+    }
     
-    if (existingUser && existingUser.emailVerified) {
+    // Check if email is already verified
+    if (user.emailVerified) {
       return res.status(400).json({
-        success: false,
         message: 'Email is already verified'
       });
     }
     
-    // Generate a verification code
-    const code = generateVerificationCode();
+    // Generate a random 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store the verification code
-    // Code expires in 30 minutes
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    // Set expiration time (30 minutes from now)
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
     
-    if (existingUser) {
-      await storage.saveVerificationCode(existingUser.id, code, expiresAt);
-    } else {
-      // If user doesn't exist yet, create a temporary verification code
-      // This will be associated with the user upon registration
-      const tempUser = await storage.createUser({
-        username: `temp-${Date.now()}`,
-        password: `temp-${Math.random().toString(36).substring(2, 15)}`, // Temporary password
-        email,
-        emailVerified: false,
-        phoneVerified: false,
-        notificationsEnabled: false
-      });
-      
-      await storage.saveVerificationCode(tempUser.id, code, expiresAt);
-    }
+    // Save verification code to database
+    await storage.saveVerificationCode(user.id, code, expiresAt);
     
     // Send verification email
-    const sent = await sendVerificationEmail(email, code);
+    const emailSent = await emailService.sendVerificationCode(email, code);
     
-    if (!sent) {
+    if (!emailSent) {
       return res.status(500).json({
-        success: false,
         message: 'Failed to send verification email'
       });
     }
     
-    return res.json({
-      success: true,
-      message: 'Verification email sent'
+    // Return success response
+    res.status(200).json({
+      message: 'Verification code sent to your email',
+      expiresAt
     });
   } catch (error) {
-    console.error('Error sending verification email:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
+    console.error('Error sending verification code:', error);
+    res.status(500).json({
+      message: 'Failed to send verification code',
       error: (error as Error).message
     });
   }
 };
 
 /**
- * Verify email with code
- * @route POST /api/email/verify/code
+ * Verify email with verification code
+ * @route POST /api/auth/email/verify
  */
-export const verifyCode = async (req: Request, res: Response) => {
+export const verifyEmailCode = async (req: Request, res: Response) => {
   try {
-    // Validate request
-    const validation = verifyCodeSchema.safeParse(req.body);
-    
-    if (!validation.success) {
+    // Validate request body
+    const validationResult = verifyCodeSchema.safeParse(req.body);
+    if (!validationResult.success) {
       return res.status(400).json({
-        success: false,
-        message: 'Invalid request data',
-        errors: validation.error.errors
+        message: 'Invalid verification data',
+        errors: validationResult.error.errors
       });
     }
     
-    const { email, code } = validation.data;
+    const { email, code } = validationResult.data;
     
-    // Find the user
+    // Get user by email
     const user = await storage.getUserByEmail(email);
-    
     if (!user) {
       return res.status(404).json({
-        success: false,
-        message: 'User not found'
+        message: 'No user found with this email address'
       });
     }
     
-    // Check if the code is valid
+    // Check if already verified
+    if (user.emailVerified) {
+      return res.status(400).json({
+        message: 'Email is already verified'
+      });
+    }
+    
+    // Get verification code from database
     const verificationCode = await storage.getVerificationCode(user.id, code);
     
     if (!verificationCode) {
-      return res.status(400).json({
-        success: false,
+      return res.status(404).json({
         message: 'Invalid verification code'
       });
     }
     
-    // Check if the code has expired
-    if (verificationCode.expiresAt < new Date()) {
+    // Check if code is expired
+    if (new Date() > new Date(verificationCode.expiresAt)) {
       return res.status(400).json({
-        success: false,
         message: 'Verification code has expired'
       });
     }
     
-    // Check if the code is already verified
-    if (verificationCode.verified) {
-      return res.status(400).json({
-        success: false,
-        message: 'Code already used'
-      });
-    }
-    
-    // Mark the code as verified
+    // Mark code as verified
     await storage.markVerificationCodeAsVerified(verificationCode.id);
     
-    // Mark the user's email as verified
+    // Mark user email as verified
     const updatedUser = await storage.markUserEmailAsVerified(user.id);
     
     if (!updatedUser) {
       return res.status(500).json({
-        success: false,
-        message: 'Failed to update user'
+        message: 'Failed to verify email'
       });
     }
     
-    return res.json({
-      success: true,
+    // Send welcome email
+    const displayName = user.displayName || user.username;
+    emailService.sendWelcomeEmail(email, displayName).catch(err => {
+      console.error('Failed to send welcome email:', err);
+    });
+    
+    // Return success response
+    res.status(200).json({
       message: 'Email verified successfully',
       user: {
         id: updatedUser.id,
+        username: updatedUser.username,
+        displayName: updatedUser.displayName,
         email: updatedUser.email,
         emailVerified: updatedUser.emailVerified
       }
     });
   } catch (error) {
     console.error('Error verifying email:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
+    res.status(500).json({
+      message: 'Failed to verify email',
       error: (error as Error).message
     });
   }

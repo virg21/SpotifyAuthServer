@@ -9,6 +9,7 @@ import musicRoutes from "./routes/musicRoutes";
 import verificationRoutes from "./routes/verificationRoutes";
 import emailVerificationRoutes from "./routes/emailVerificationRoutes";
 import eventRoutes from "./routes/eventRoutes";
+import testRoutes from "./routes/testRoutes";
 
 // Import additional middleware if needed
 import { errorHandler, notFound } from "./middleware/errorHandler";
@@ -21,6 +22,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/verify', verificationRoutes);
   app.use('/api/email', emailVerificationRoutes);
   app.use('/api/events', eventRoutes);
+  app.use('/api/test', testRoutes);
 
   // Health check endpoint
   app.get('/api/health', (req, res) => {

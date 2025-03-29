@@ -1,20 +1,12 @@
-import { Router } from 'express';
-import { sendVerification, verifyCode } from '../controllers/emailVerificationController';
+import express from 'express';
+import { sendVerificationCode, verifyEmailCode } from '../controllers/emailVerificationController';
 
-const router = Router();
+const router = express.Router();
 
-/**
- * @route   POST /api/email/verify
- * @desc    Send verification email with code
- * @access  Public
- */
-router.post('/verify', sendVerification);
+// Send verification code email
+router.post('/send-verification', sendVerificationCode);
 
-/**
- * @route   POST /api/email/verify/code
- * @desc    Verify email with code
- * @access  Public
- */
-router.post('/verify/code', verifyCode);
+// Verify email with code
+router.post('/verify', verifyEmailCode);
 
 export default router;

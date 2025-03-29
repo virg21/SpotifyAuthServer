@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, doublePrecision, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, doublePrecision, timestamp, jsonb, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -56,6 +56,20 @@ export const events = pgTable("events", {
   externalId: text("external_id").unique(),
 });
 
+export const playlists = pgTable("playlists", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  eventId: integer("event_id").references(() => events.id),
+  spotifyPlaylistId: text("spotify_playlist_id"),
+  name: text("name").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  tracks: jsonb("tracks").notNull(),
+  mood: varchar("mood", { length: 50 }),
+  isPublic: boolean("is_public").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -98,9 +112,17 @@ export const verifyCodeSchema = z.object({
 
 export const musicSummarySchema = createInsertSchema(musicSummaries);
 export const eventSchema = createInsertSchema(events);
+export const playlistSchema = createInsertSchema(playlists);
+
+export const createPlaylistSchema = z.object({
+  eventId: z.number(),
+  mood: z.enum(['energetic', 'chill', 'happy', 'focused', 'party', 'romantic']).optional(),
+  playlistName: z.string().optional(),
+});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type MusicSummary = typeof musicSummaries.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type VerificationCode = typeof verificationCodes.$inferSelect;
+export type Playlist = typeof playlists.$inferSelect;

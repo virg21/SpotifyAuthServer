@@ -32,6 +32,7 @@ export function validateEnv(): void {
     'SPOTIFY_CLIENT_SECRET',
     'SPOTIFY_REDIRECT_URI',
     'SENDGRID_API_KEY',
+    'SENDGRID_FROM_EMAIL',
     'TWILIO_ACCOUNT_SID',
     'TWILIO_AUTH_TOKEN',
     'TWILIO_PHONE_NUMBER',
