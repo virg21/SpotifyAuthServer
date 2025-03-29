@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Load environment variables from .env file
-dotenv.config();
+dotenv.config({ path: path.resolve('./server/.env') });
 
 /**
  * Environment variable configuration
@@ -15,8 +16,8 @@ dotenv.config();
 export function getEnv(key: string, required: boolean = true): string {
   const value = process.env[key];
   
-  if (required && value === undefined) {
-    throw new Error(`Required environment variable ${key} is missing`);
+  if (!value && required) {
+    throw new Error(`Environment variable ${key} is required but not set.`);
   }
   
   return value || '';
@@ -30,17 +31,17 @@ export function validateEnv(): void {
   const requiredVars = [
     'SPOTIFY_CLIENT_ID',
     'SPOTIFY_CLIENT_SECRET',
-    'SPOTIFY_REDIRECT_URI'
+    'REDIRECT_URI',
+    'SESSION_SECRET'
   ];
   
-  const missingVars = requiredVars.filter(key => !process.env[key]);
+  const missing = requiredVars.filter(
+    (varName) => !process.env[varName]
+  );
   
-  if (missingVars.length > 0) {
+  if (missing.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missingVars.join(', ')}. ` +
-      'Please check your .env file or environment variables.'
+      `Missing required environment variables: ${missing.join(', ')}`
     );
   }
-  
-  console.log('✅ Environment variables validated successfully');
 }

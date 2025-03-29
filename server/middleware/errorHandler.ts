@@ -9,16 +9,30 @@ export const errorHandler = (
   res: Response, 
   next: NextFunction
 ) => {
-  console.error(`Error: ${err.message}`);
+  console.error('Error:', err.message);
   console.error(err.stack);
   
-  // Default status code and message
-  const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
-  const message = err.message || 'Internal Server Error';
+  // Handle different types of errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: err.message
+    });
+  }
   
-  res.status(statusCode).json({
-    error: message,
-    stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack
+  if (err.name === 'UnauthorizedError') {
+    return res.status(401).json({
+      error: 'Unauthorized',
+      message: 'Authentication required'
+    });
+  }
+  
+  // Default server error
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' 
+      ? 'Something went wrong' 
+      : err.message
   });
 };
 
