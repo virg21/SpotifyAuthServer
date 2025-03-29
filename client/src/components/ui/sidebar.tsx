@@ -44,8 +44,7 @@ const Sidebar: FC = () => {
           <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.name}>
-                <Link href={item.href}>
-                  <a className={cn(
+                <Link href={item.href} className={cn(
                     "flex items-center px-6 py-3 border-l-4",
                     location === item.href
                       ? "text-primary bg-blue-50 border-primary"
@@ -100,7 +99,6 @@ const Sidebar: FC = () => {
                         {item.badge}
                       </span>
                     )}
-                  </a>
                 </Link>
               </li>
             ))}
