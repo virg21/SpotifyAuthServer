@@ -6,6 +6,46 @@ import { storage } from '../storage';
 import { SpotifyApi } from '../utils/spotifyApi';
 
 /**
+ * Register a new user
+ * @param req
+ * @param res
+ */
+export const register = async (req: Request, res: Response) => {
+  try {
+    const { username, password, displayName, email, birthday } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await storage.getUserByUsername(username);
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+    
+    // Create new user
+    const user = await storage.createUser({
+      username,
+      password,
+      displayName,
+      email,
+      birthday,
+      spotifyId: null,
+      accessToken: null,
+      refreshToken: null
+    });
+    
+    // Don't return sensitive information
+    const { password: userPassword, ...userWithoutPassword } = user;
+    
+    res.status(201).json({
+      message: 'User created successfully',
+      user: userWithoutPassword
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ message: 'Error registering user' });
+  }
+};
+
+/**
  * Initiates the Spotify authorization flow
  * Redirects the user to Spotify's authorization page
  */

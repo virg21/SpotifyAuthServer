@@ -1,7 +1,14 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
-import axios from 'axios';
-import { getEnv } from '../config/env';
+import { eventScraperManager } from '../scrapers/EventScraperManager';
+import { z } from 'zod';
+
+const eventQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  radius: z.coerce.number().default(10),
+  userId: z.coerce.number().optional(),
+});
 
 /**
  * Search for music events based on location and user preferences
@@ -9,139 +16,194 @@ import { getEnv } from '../config/env';
  */
 export const getEvents = async (req: Request, res: Response) => {
   try {
-    // Extract location from query parameters
-    const latitude = parseFloat(req.query.lat as string);
-    const longitude = parseFloat(req.query.lng as string);
-    const radius = parseInt(req.query.radius as string || '25'); // Default 25km radius
-    
-    if (isNaN(latitude) || isNaN(longitude)) {
-      return res.status(400).json({ 
-        message: 'Invalid location parameters. Both lat and lng are required.'
+    // If no query parameters, return all events
+    if (!req.query.lat && !req.query.lng) {
+      const allEvents = await storage.getAllEvents();
+      // Sort events by date
+      const sortedEvents = allEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+      
+      return res.json({
+        success: true,
+        count: sortedEvents.length,
+        events: sortedEvents
       });
     }
     
-    // Get user ID for personalization (if available)
-    const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
-    let userMusicSummary = null;
+    const queryResult = eventQuerySchema.safeParse(req.query);
+    
+    if (!queryResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid query parameters',
+        errors: queryResult.error.errors
+      });
+    }
+    
+    const { lat, lng, radius, userId } = queryResult.data;
+    
+    // Fetch events based on location
+    const events = await storage.getEvents(lat, lng, radius);
     
     if (userId) {
-      userMusicSummary = await storage.getMusicSummary(userId);
+      // If we have a user ID, get their music summary to personalize results
+      const musicSummary = await storage.getMusicSummary(userId);
+      
+      if (musicSummary) {
+        // Sort events by relevance to user's music preferences
+        const sortedEvents = events.map(event => {
+          const relevanceScore = calculateEventRelevance(event, musicSummary);
+          return { ...event, relevanceScore };
+        }).sort((a, b) => b.relevanceScore - a.relevanceScore);
+        
+        return res.json({
+          success: true,
+          count: sortedEvents.length,
+          events: sortedEvents
+        });
+      }
     }
     
-    // First check our local database for events
-    const localEvents = await storage.getEvents(latitude, longitude, radius);
+    // If no user ID or no music summary, return events sorted by date
+    const sortedEvents = events.sort((a, b) => a.date.getTime() - b.date.getTime());
     
-    // Try to get events from external APIs if configured
-    const apiEvents = await fetchExternalEvents(latitude, longitude, radius, userMusicSummary);
-    
-    // Combine events from all sources
-    const allEvents = [...localEvents, ...apiEvents];
-    
-    // If we have music preferences, sort events by relevance to user's taste
-    if (userMusicSummary) {
-      // Simple relevance sorting based on genre match
-      allEvents.sort((a, b) => {
-        const aRelevance = calculateEventRelevance(a, userMusicSummary);
-        const bRelevance = calculateEventRelevance(b, userMusicSummary);
-        return bRelevance - aRelevance;
-      });
-    }
-    
-    res.status(200).json({
-      events: allEvents,
-      count: allEvents.length,
-      location: { latitude, longitude, radius }
+    return res.json({
+      success: true,
+      count: sortedEvents.length,
+      events: sortedEvents
     });
   } catch (error) {
     console.error('Error fetching events:', error);
-    res.status(500).json({ message: 'Error fetching events' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch events',
+      error: (error as Error).message
+    });
   }
 };
 
 /**
- * Fetch events from external APIs
+ * Create a test event
+ * @route POST /api/events/test
  */
-async function fetchExternalEvents(latitude: number, longitude: number, radius: number, userMusicSummary: any) {
-  const events = [];
-  
-  // Try Ticketmaster API if key is configured
-  const ticketmasterApiKey = getEnv('TICKETMASTER_API_KEY', false);
-  if (ticketmasterApiKey) {
-    try {
-      const response = await axios.get(
-        `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${ticketmasterApiKey}&latlong=${latitude},${longitude}&radius=${radius}&size=100&classificationName=music`
-      );
-      
-      if (response.data._embedded && response.data._embedded.events) {
-        const ticketmasterEvents = response.data._embedded.events.map((event: any) => {
-          const venue = event._embedded.venues[0];
-          return {
-            id: events.length + 1, // Generate an ID for our database
-            name: event.name,
-            venue: venue.name,
-            date: new Date(event.dates.start.dateTime),
-            description: event.info || event.pleaseNote || '',
-            imageUrl: event.images.length > 0 ? event.images[0].url : null,
-            ticketUrl: event.url,
-            latitude: parseFloat(venue.location.latitude),
-            longitude: parseFloat(venue.location.longitude),
-            genre: event.classifications[0].genre?.name || '',
-            source: 'ticketmaster'
-          };
-        });
-        
-        events.push(...ticketmasterEvents);
-        
-        // Save to our database for future requests
-        for (const event of ticketmasterEvents) {
-          await storage.createEvent(event);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Ticketmaster events:', error);
-    }
+export const createTestEvent = async (req: Request, res: Response) => {
+  try {
+    const now = new Date();
+    const testEvent = {
+      name: `Test Event ${now.toISOString()}`,
+      venue: 'Test Venue',
+      date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // One week from now
+      description: 'This is a test event created for testing purposes',
+      imageUrl: 'https://via.placeholder.com/300',
+      ticketUrl: 'https://example.com/tickets',
+      latitude: 41.8781,
+      longitude: -87.6298,
+      genre: 'Rock',
+      source: 'Test',
+      externalId: `test-${Date.now()}`
+    };
+    
+    const createdEvent = await storage.createEvent(testEvent);
+    
+    return res.status(201).json({
+      success: true,
+      message: 'Test event created successfully',
+      event: createdEvent
+    });
+  } catch (error) {
+    console.error('Error creating test event:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create test event',
+      error: (error as Error).message
+    });
   }
-  
-  // Other APIs can be added here (Eventbrite, Bandsintown, etc.)
-  
-  return events;
-}
+};
+
+/**
+ * Endpoint to manually trigger event scraping
+ * @route POST /api/events/scrape
+ * @access Admin only
+ */
+export const triggerScraping = async (_req: Request, res: Response) => {
+  try {
+    // Start the scraping process
+    eventScraperManager.runAllScrapers().catch(error => {
+      console.error('Error during scraping:', error);
+    });
+    
+    return res.json({
+      success: true,
+      message: 'Event scraping process started. This will run in the background.'
+    });
+  } catch (error) {
+    console.error('Error triggering scraping:', error);
+    return res.status(500).json({
+      success: false, 
+      message: 'Failed to start scraping process',
+      error: (error as Error).message
+    });
+  }
+};
+
+/**
+ * Get scraper status
+ * @route GET /api/events/scrape/status
+ * @access Admin only
+ */
+export const getScraperStatus = (_req: Request, res: Response) => {
+  try {
+    const status = eventScraperManager.getStatus();
+    
+    return res.json({
+      success: true,
+      status
+    });
+  } catch (error) {
+    console.error('Error getting scraper status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get scraper status',
+      error: (error as Error).message
+    });
+  }
+};
 
 /**
  * Calculate relevance score for an event based on user's music taste
  */
-function calculateEventRelevance(event: any, musicSummary: any) {
-  if (!event.genre || !musicSummary) return 0;
+function calculateEventRelevance(event: any, musicSummary: any): number {
+  let score = 0;
   
-  let relevance = 0;
+  // Base score of 1 for all events
+  score += 1;
   
-  // Check against top genres
-  musicSummary.topGenres.forEach((genreInfo: any) => {
-    if (event.genre.toLowerCase().includes(genreInfo.genre.toLowerCase())) {
-      relevance += genreInfo.count;
+  // Give higher scores based on genre match
+  if (event.genre && musicSummary.topGenres) {
+    const eventGenre = event.genre.toLowerCase();
+    const userGenres = musicSummary.topGenres as { genre: string, count: number }[];
+    
+    for (const genreData of userGenres) {
+      if (eventGenre.includes(genreData.genre.toLowerCase())) {
+        // Higher score for more preferred genres (those with higher counts)
+        score += 3 * (genreData.count / 10);
+        break;
+      }
     }
-  });
-  
-  // Check against genre profile categories
-  const genre = event.genre.toLowerCase();
-  
-  if (genre.includes('electronic') || genre.includes('edm') || genre.includes('techno')) {
-    relevance += musicSummary.genreProfile.electronic / 10;
-  } else if (genre.includes('rock') || genre.includes('alternative') || genre.includes('metal')) {
-    relevance += musicSummary.genreProfile.rock / 10;
-  } else if (genre.includes('hip') || genre.includes('rap') || genre.includes('r&b')) {
-    relevance += musicSummary.genreProfile.hiphop / 10;
-  } else if (genre.includes('pop')) {
-    relevance += musicSummary.genreProfile.pop / 10;
-  } else if (genre.includes('jazz') || genre.includes('blues') || genre.includes('soul')) {
-    relevance += musicSummary.genreProfile.jazz / 10;
-  } else if (genre.includes('folk') || genre.includes('acoustic')) {
-    relevance += musicSummary.genreProfile.folk / 10;
-  } else if (genre.includes('classical') || genre.includes('orchestra')) {
-    relevance += musicSummary.genreProfile.classical / 10;
-  } else if (genre.includes('world') || genre.includes('latin') || genre.includes('reggae')) {
-    relevance += musicSummary.genreProfile.world / 10;
   }
   
-  return relevance;
+  // Check if event artists match user's top artists
+  if (event.name && musicSummary.topArtists) {
+    const eventName = event.name.toLowerCase();
+    const userArtists = musicSummary.topArtists as { name: string, count: number }[];
+    
+    for (const artistData of userArtists) {
+      if (eventName.includes(artistData.name.toLowerCase())) {
+        // Direct artist match is a strong signal
+        score += 5 * (artistData.count / 10);
+        break;
+      }
+    }
+  }
+  
+  return score;
 }

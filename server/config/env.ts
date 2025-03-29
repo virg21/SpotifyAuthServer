@@ -1,9 +1,3 @@
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Load environment variables from .env file
-dotenv.config({ path: path.resolve('./server/.env') });
-
 /**
  * Environment variable configuration
  * Safely get environment variables with validation
@@ -17,7 +11,7 @@ export function getEnv(key: string, required: boolean = true): string {
   const value = process.env[key];
   
   if (!value && required) {
-    throw new Error(`Environment variable ${key} is required but not set.`);
+    throw new Error(`Environment variable ${key} is required but not set`);
   }
   
   return value || '';
@@ -29,19 +23,39 @@ export function getEnv(key: string, required: boolean = true): string {
  */
 export function validateEnv(): void {
   const requiredVars = [
-    'SPOTIFY_CLIENT_ID',
-    'SPOTIFY_CLIENT_SECRET',
-    'REDIRECT_URI',
-    'SESSION_SECRET'
+    'NODE_ENV'
   ];
   
-  const missing = requiredVars.filter(
-    (varName) => !process.env[varName]
-  );
+  // Optional vars that we check but don't require
+  const optionalVars = [
+    'SPOTIFY_CLIENT_ID',
+    'SPOTIFY_CLIENT_SECRET',
+    'SPOTIFY_REDIRECT_URI',
+    'SENDGRID_API_KEY',
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_PHONE_NUMBER',
+    'EVENTBRITE_API_KEY',
+    'BANDSINTOWN_API_KEY',
+    'TICKETMASTER_API_KEY'
+  ];
   
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}`
-    );
+  // Check required vars
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
+  
+  // Log which optional vars are available
+  const availableOptionalVars = optionalVars.filter(varName => process.env[varName]);
+  const missingOptionalVars = optionalVars.filter(varName => !process.env[varName]);
+  
+  if (availableOptionalVars.length > 0) {
+    console.log(`Available optional environment variables: ${availableOptionalVars.join(', ')}`);
+  }
+  
+  if (missingOptionalVars.length > 0) {
+    console.warn(`Missing optional environment variables: ${missingOptionalVars.join(', ')}`);
   }
 }

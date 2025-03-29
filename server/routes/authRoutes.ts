@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, callback, refreshToken } from '../controllers/authController';
+import { login, callback, refreshToken, register } from '../controllers/authController';
 
 const router = express.Router();
 
@@ -23,5 +23,12 @@ router.get('/callback', callback);
  * @access  Public
  */
 router.post('/refresh', refreshToken);
+
+/**
+ * @route   POST /api/auth/register
+ * @desc    Register a new user
+ * @access  Public
+ */
+router.post('/register', register);
 
 export default router;

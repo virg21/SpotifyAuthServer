@@ -7,8 +7,10 @@ import {
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserBySpotifyId(spotifyId: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   
@@ -23,14 +25,24 @@ export interface IStorage {
   // Notification methods
   updateUserNotifications(userId: number, enabled: boolean): Promise<User | undefined>;
   
-  // Phone verification methods
+  // Verification methods
   saveVerificationCode(userId: number, code: string, expiresAt: Date): Promise<VerificationCode>;
   getVerificationCode(userId: number, code: string): Promise<VerificationCode | undefined>;
   markVerificationCodeAsVerified(id: number): Promise<VerificationCode | undefined>;
+  markUserEmailAsVerified(userId: number): Promise<User | undefined>;
+  markUserPhoneAsVerified(userId: number): Promise<User | undefined>;
   
   // Events methods
   getEvents(latitude: number, longitude: number, radius: number): Promise<Event[]>;
+  getAllEvents(): Promise<Event[]>;
+  getEventById(id: number): Promise<Event | undefined>;
+  getEventByExternalId(externalId: string): Promise<Event | undefined>;
   createEvent(event: Omit<Event, 'id'>): Promise<Event>;
+  updateEvent(id: number, eventData: Partial<Event>): Promise<Event | undefined>;
+  deleteEvent(id: number): Promise<boolean>;
+  searchEvents(query: string, limit?: number): Promise<Event[]>;
+  getEventsByGenre(genre: string): Promise<Event[]>;
+  getUpcomingEvents(days?: number): Promise<Event[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -58,6 +70,10 @@ export class MemStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
+  
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
@@ -70,6 +86,12 @@ export class MemStorage implements IStorage {
       (user) => user.spotifyId === spotifyId,
     );
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email,
+    );
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userId++;
@@ -80,6 +102,7 @@ export class MemStorage implements IStorage {
       password: insertUser.password,
       displayName: insertUser.displayName || null,
       email: insertUser.email || null,
+      emailVerified: false,
       birthday: insertUser.birthday || null,
       spotifyId: insertUser.spotifyId || null,
       accessToken: insertUser.accessToken || null,
@@ -166,6 +189,14 @@ export class MemStorage implements IStorage {
     return updatedCode;
   }
   
+  async markUserEmailAsVerified(userId: number): Promise<User | undefined> {
+    return this.updateUser(userId, { emailVerified: true });
+  }
+  
+  async markUserPhoneAsVerified(userId: number): Promise<User | undefined> {
+    return this.updateUser(userId, { phoneVerified: true });
+  }
+  
   // Events methods
   async getEvents(latitude: number, longitude: number, radius: number): Promise<Event[]> {
     // Calculate distance between coordinates using Haversine formula
@@ -188,11 +219,87 @@ export class MemStorage implements IStorage {
     });
   }
   
+  async getAllEvents(): Promise<Event[]> {
+    return Array.from(this.events.values());
+  }
+  
+  async getEventById(id: number): Promise<Event | undefined> {
+    return this.events.get(id);
+  }
+  
+  async getEventByExternalId(externalId: string): Promise<Event | undefined> {
+    return Array.from(this.events.values()).find(
+      (event) => event.externalId === externalId
+    );
+  }
+  
   async createEvent(eventData: Omit<Event, 'id'>): Promise<Event> {
+    // First, check if we already have this event by external ID to avoid duplicates
+    if (eventData.externalId) {
+      const existingEvent = await this.getEventByExternalId(eventData.externalId);
+      if (existingEvent) {
+        // Update the existing event
+        return this.updateEvent(existingEvent.id, eventData) as Promise<Event>;
+      }
+    }
+    
+    // Create a new event
     const id = this.eventId++;
     const event: Event = { ...eventData, id };
     this.events.set(id, event);
     return event;
+  }
+  
+  async updateEvent(id: number, eventData: Partial<Event>): Promise<Event | undefined> {
+    const event = this.events.get(id);
+    if (!event) return undefined;
+    
+    const updatedEvent = { ...event, ...eventData };
+    this.events.set(id, updatedEvent);
+    return updatedEvent;
+  }
+  
+  async deleteEvent(id: number): Promise<boolean> {
+    return this.events.delete(id);
+  }
+  
+  async searchEvents(query: string, limit: number = 50): Promise<Event[]> {
+    const lowerQuery = query.toLowerCase();
+    
+    // Filter events that match the query in name, venue, or description
+    const filteredEvents = Array.from(this.events.values()).filter(event => {
+      return (
+        (event.name && event.name.toLowerCase().includes(lowerQuery)) ||
+        (event.venue && event.venue.toLowerCase().includes(lowerQuery)) ||
+        (event.description && event.description.toLowerCase().includes(lowerQuery)) ||
+        (event.genre && event.genre.toLowerCase().includes(lowerQuery))
+      );
+    });
+    
+    // Sort by date and return limited results
+    return filteredEvents
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(0, limit);
+  }
+  
+  async getEventsByGenre(genre: string): Promise<Event[]> {
+    const lowerGenre = genre.toLowerCase();
+    
+    return Array.from(this.events.values()).filter(event => 
+      event.genre && event.genre.toLowerCase() === lowerGenre
+    );
+  }
+  
+  async getUpcomingEvents(days: number = 30): Promise<Event[]> {
+    const now = new Date();
+    const futureDate = new Date();
+    futureDate.setDate(now.getDate() + days);
+    
+    return Array.from(this.events.values())
+      .filter(event => {
+        return event.date >= now && event.date <= futureDate;
+      })
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 }
 

@@ -1,7 +1,7 @@
-import express from 'express';
-import { getEvents } from '../controllers/eventController';
+import { Router } from 'express';
+import { getEvents, triggerScraping, getScraperStatus, createTestEvent } from '../controllers/eventController';
 
-const router = express.Router();
+const router = Router();
 
 /**
  * @route   GET /api/events?lat=...&lng=...&radius=...&userId=...
@@ -9,5 +9,26 @@ const router = express.Router();
  * @access  Public
  */
 router.get('/', getEvents);
+
+/**
+ * @route   POST /api/events/test
+ * @desc    Create a test event
+ * @access  Public (for testing)
+ */
+router.post('/test', createTestEvent);
+
+/**
+ * @route   POST /api/events/scrape
+ * @desc    Manually trigger the event scraping process
+ * @access  Admin
+ */
+router.post('/scrape', triggerScraping);
+
+/**
+ * @route   GET /api/events/scrape/status
+ * @desc    Get status of the scraper manager
+ * @access  Admin
+ */
+router.get('/scrape/status', getScraperStatus);
 
 export default router;

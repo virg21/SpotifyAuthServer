@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   displayName: text("display_name"),
   email: text("email"),
+  emailVerified: boolean("email_verified").default(false),
   birthday: text("birthday"),
   spotifyId: text("spotify_id").unique(),
   accessToken: text("access_token"),
@@ -52,6 +53,7 @@ export const events = pgTable("events", {
   longitude: doublePrecision("longitude"),
   genre: text("genre"),
   source: text("source"),
+  externalId: text("external_id").unique(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -59,10 +61,21 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   displayName: true,
   email: true,
+  emailVerified: true,
   birthday: true,
   spotifyId: true,
   accessToken: true,
   refreshToken: true,
+  phoneNumber: true,
+  phoneVerified: true,
+  notificationsEnabled: true,
+});
+
+export const updateUserProfileSchema = z.object({
+  displayName: z.string().optional(),
+  email: z.string().email().optional(),
+  birthday: z.string().optional(),
+  phoneNumber: z.string().optional(),
 });
 
 export const updateUserLocationSchema = z.object({
@@ -80,6 +93,7 @@ export const verifyPhoneSchema = z.object({
 
 export const verifyCodeSchema = z.object({
   code: z.string(),
+  email: z.string().email(),
 });
 
 export const musicSummarySchema = createInsertSchema(musicSummaries);

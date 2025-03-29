@@ -1,7 +1,20 @@
 import express from 'express';
-import { getUserProfile, updateUserLocation, updateNotifications } from '../controllers/userController';
+import { 
+  getUserProfile, 
+  updateUserLocation, 
+  updateNotifications, 
+  getUsers,
+  updateUserProfile
+} from '../controllers/userController';
 
 const router = express.Router();
+
+/**
+ * @route   GET /api/user
+ * @desc    Get all users
+ * @access  Private
+ */
+router.get('/', getUsers);
 
 /**
  * @route   GET /api/user/profile/:userId?
@@ -9,6 +22,13 @@ const router = express.Router();
  * @access  Private
  */
 router.get('/profile/:userId?', getUserProfile);
+
+/**
+ * @route   PATCH /api/user/profile/:userId?
+ * @desc    Update user profile information
+ * @access  Private
+ */
+router.patch('/profile/:userId?', updateUserProfile);
 
 /**
  * @route   POST /api/user/location/:userId?

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
-import { updateUserLocationSchema, updateNotificationsSchema } from '@shared/schema';
+import { updateUserLocationSchema, updateNotificationsSchema, updateUserProfileSchema } from '@shared/schema';
 
 /**
  * Get user profile information
@@ -93,5 +93,66 @@ export const updateNotifications = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating notification preferences:', error);
     res.status(500).json({ message: 'Error updating notification preferences' });
+  }
+};
+
+/**
+ * Get all users
+ * @route GET /api/users
+ */
+export const getUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await storage.getUsers();
+    
+    // Remove sensitive information like passwords
+    const safeUsers = users.map(user => {
+      const { password, ...safeUser } = user;
+      return safeUser;
+    });
+    
+    res.status(200).json({
+      users: safeUsers,
+      count: safeUsers.length
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Error fetching users' });
+  }
+};
+
+/**
+ * Update user profile information
+ * @route PATCH /api/user/profile
+ */
+export const updateUserProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId || '1');
+    
+    // Validate request body
+    const validation = updateUserProfileSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ 
+        message: 'Invalid profile data',
+        errors: validation.error.errors
+      });
+    }
+    
+    const profileData = validation.data;
+    
+    const updatedUser = await storage.updateUser(userId, profileData);
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Don't return sensitive information
+    const { password, ...userProfile } = updatedUser;
+    
+    res.status(200).json({ 
+      message: 'Profile updated successfully',
+      user: userProfile
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ message: 'Error updating user profile' });
   }
 };
