@@ -205,6 +205,29 @@ export const broadcastEventRecommendations = async (_req: Request, res: Response
     let successCount = 0;
     let failureCount = 0;
     
+    // Get all events first
+    const allEvents = await storage.getAllEvents();
+    if (allEvents.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No events found to recommend'
+      });
+    }
+    
+    // Get upcoming events (next 30 days)
+    const now = new Date();
+    const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const upcomingEvents = allEvents.filter((event: Event) => {
+      return event.date > now && event.date < thirtyDaysLater;
+    });
+    
+    if (upcomingEvents.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No upcoming events found to recommend'
+      });
+    }
+    
     // Send recommendations to each user
     const emailPromises = usersWithNotifications.map(async (user: User) => {
       try {
@@ -212,24 +235,7 @@ export const broadcastEventRecommendations = async (_req: Request, res: Response
         const musicSummary = await storage.getMusicSummary(user.id);
         if (!musicSummary) {
           console.log(`User ${user.id} has no music summary, skipping recommendations`);
-          failureCount++;
-          return;
-        }
-        
-        // Get and personalize events
-        const allEvents = await storage.getAllEvents();
-        
-        // Get upcoming events (next 30 days)
-        const now = new Date();
-        const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        let upcomingEvents = allEvents.filter((event: Event) => {
-          return event.date > now && event.date < thirtyDaysLater;
-        });
-        
-        if (upcomingEvents.length === 0) {
-          console.log(`No upcoming events for user ${user.id}, skipping recommendations`);
-          failureCount++;
-          return;
+          return { success: false, userId: user.id, error: 'No music summary found' };
         }
         
         // Score and personalize events for this user
@@ -285,11 +291,11 @@ export const broadcastEventRecommendations = async (_req: Request, res: Response
         
         // Sort by relevance and take top 5
         const topEvents = personalizedEvents
-          .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
+          .sort((a: EnhancedEvent, b: EnhancedEvent) => b.relevanceScore - a.relevanceScore)
           .slice(0, 5);
         
         // Format for email
-        const emailEvents = topEvents.map((event: any) => ({
+        const emailEvents = topEvents.map((event: EnhancedEvent) => ({
           name: event.name,
           venue: event.venue,
           date: event.date,
@@ -305,19 +311,32 @@ export const broadcastEventRecommendations = async (_req: Request, res: Response
           emailEvents
         );
         
-        if (emailSuccess) {
-          successCount++;
-        } else {
-          failureCount++;
-        }
+        return { 
+          success: emailSuccess, 
+          userId: user.id,
+          emailCount: emailEvents.length
+        };
       } catch (error) {
         console.error(`Error sending recommendations to user ${user.id}:`, error);
-        failureCount++;
+        return { 
+          success: false, 
+          userId: user.id, 
+          error: (error as Error).message 
+        };
       }
     });
     
     // Wait for all emails to be sent
-    await Promise.all(emailPromises);
+    const results = await Promise.all(emailPromises);
+    
+    // Count successes and failures
+    results.forEach(result => {
+      if (result?.success) {
+        successCount++;
+      } else {
+        failureCount++;
+      }
+    });
     
     return res.status(200).json({
       success: true,
