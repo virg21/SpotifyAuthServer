@@ -10,6 +10,9 @@
 export function getEnv(key: string, required: boolean = true): string {
   const value = process.env[key];
   
+  // Log environment variable access for debugging
+  console.log(`Accessing env var: ${key} = ${value || '(not set)'}`);
+  
   if (!value && required) {
     throw new Error(`Environment variable ${key} is required but not set`);
   }

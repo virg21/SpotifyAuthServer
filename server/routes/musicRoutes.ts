@@ -1,5 +1,6 @@
 import express from 'express';
 import { getMusicSummary } from '../controllers/musicController';
+import { getApiLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
@@ -8,6 +9,6 @@ const router = express.Router();
  * @desc    Get user's music personality summary
  * @access  Private
  */
-router.get('/summary/:userId?', getMusicSummary);
+router.get('/summary/:userId?', getApiLimiter(), getMusicSummary);
 
 export default router;

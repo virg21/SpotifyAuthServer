@@ -1,5 +1,6 @@
 import express from 'express';
 import { login, callback, refreshToken, register } from '../controllers/authController';
+import { getAuthLimiter, getStandardLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
  * @desc    Redirects to Spotify login page
  * @access  Public
  */
-router.get('/login', login);
+router.get('/login', getStandardLimiter(), login);
 
 /**
  * @route   GET /api/auth/callback
@@ -22,13 +23,13 @@ router.get('/callback', callback);
  * @desc    Refresh access token using refresh token
  * @access  Public
  */
-router.post('/refresh', refreshToken);
+router.post('/refresh', getStandardLimiter(), refreshToken);
 
 /**
  * @route   POST /api/auth/register
  * @desc    Register a new user
  * @access  Public
  */
-router.post('/register', register);
+router.post('/register', getAuthLimiter(), register);
 
 export default router;

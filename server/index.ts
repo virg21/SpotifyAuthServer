@@ -2,6 +2,23 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import dotenv from "dotenv";
+import { fileURLToPath } from 'url';
+import path from "path";
+
+// Get current file directory and project root directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(rootDir, '.env') });
+
+// Log loaded environment variables for debugging
+console.log('Loaded environment variables:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('FORCE_RATE_LIMIT:', process.env.FORCE_RATE_LIMIT);
+console.log('TEST_RATE_LIMIT:', process.env.TEST_RATE_LIMIT);
 
 const app = express();
 app.use(express.json());

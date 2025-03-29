@@ -1,6 +1,7 @@
 import express from 'express';
 import { emailService } from '../utils/emailService';
 import * as sendgrid from '../utils/sendgrid';
+import { getTestLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
  * @route POST /api/test/email
  * @access Public (for testing only - should be restricted in production)
  */
-router.post('/email', async (req, res) => {
+router.post('/email', getTestLimiter(), async (req, res) => {
   try {
     const { email, type } = req.body;
     

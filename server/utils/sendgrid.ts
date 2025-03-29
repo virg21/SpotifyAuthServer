@@ -1,11 +1,15 @@
 import { MailService } from '@sendgrid/mail';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
-}
-
+// Initialize mail service but don't throw an error if key is missing
+// We'll handle that gracefully in the sendEmail function
 const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+
+// Set the API key if it exists
+if (process.env.SENDGRID_API_KEY) {
+  mailService.setApiKey(process.env.SENDGRID_API_KEY);
+} else {
+  console.warn("SENDGRID_API_KEY environment variable not set. Email functionality will be disabled.");
+}
 
 interface EmailParams {
   to: string;
