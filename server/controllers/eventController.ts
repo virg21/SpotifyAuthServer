@@ -49,16 +49,25 @@ export const getEvents = async (req: Request, res: Response) => {
       const musicSummary = await storage.getMusicSummary(userId);
       
       if (musicSummary) {
-        // Sort events by relevance to user's music preferences
-        const sortedEvents = events.map(event => {
+        // Add relevance score and personalized reason to each event
+        const enhancedEvents = events.map(event => {
           const relevanceScore = calculateEventRelevance(event, musicSummary);
-          return { ...event, relevanceScore };
+          const reason = generateReasonForUser(event, musicSummary);
+          // Set default price to 'TBD' if not available
+          const price = event.price || 'TBD';
+          
+          return { 
+            ...event, 
+            relevanceScore,
+            reason,
+            price
+          };
         }).sort((a, b) => b.relevanceScore - a.relevanceScore);
         
         return res.json({
           success: true,
-          count: sortedEvents.length,
-          events: sortedEvents
+          count: enhancedEvents.length,
+          events: enhancedEvents
         });
       }
     }
@@ -99,7 +108,9 @@ export const createTestEvent = async (req: Request, res: Response) => {
       longitude: -87.6298,
       genre: 'Rock',
       source: 'Test',
-      externalId: `test-${Date.now()}`
+      externalId: `test-${Date.now()}`,
+      price: '$25–$45', // Add price for test event
+      reason: null // Reason will be personalized when events are retrieved
     };
     
     const createdEvent = await storage.createEvent(testEvent);
@@ -206,4 +217,57 @@ function calculateEventRelevance(event: any, musicSummary: any): number {
   }
   
   return score;
+}
+
+/**
+ * Generate personalized reason based on user's music summary and event details
+ */
+function generateReasonForUser(event: any, musicSummary: any): string {
+  if (!musicSummary) return '';
+  
+  // Extract relevant data from music summary and event
+  const topArtists = (musicSummary.topArtists || []) as { name: string, count: number }[];
+  const topGenres = (musicSummary.topGenres || []) as { genre: string, count: number }[];
+  const recentGenres = (musicSummary.recentGenres || []) as { genre: string, count: number }[];
+  const eventGenre = event.genre?.toLowerCase() || '';
+  const eventName = event.name.toLowerCase();
+  
+  // Check for direct artist match first (highest priority)
+  for (const artist of topArtists.slice(0, 5)) { // Only check top 5 artists
+    if (eventName.includes(artist.name.toLowerCase())) {
+      if (artist.count > 50) { // High count indicates it's a favorite
+        return `Your most streamed artist ${artist.name} is performing nearby`;
+      } else {
+        return `Since you've been listening to ${artist.name}`;
+      }
+    }
+  }
+  
+  // Check for genre matches
+  const matchedTopGenres = topGenres.filter(g => 
+    eventGenre.includes(g.genre.toLowerCase())
+  ).slice(0, 2); // Only use up to 2 top genres
+  
+  const matchedRecentGenres = recentGenres.filter(g => 
+    eventGenre.includes(g.genre.toLowerCase())
+  ).slice(0, 2); // Only use up to 2 recent genres
+  
+  // Different message templates for variety
+  if (matchedTopGenres.length >= 2) {
+    return `Based on your love for ${matchedTopGenres[0].genre} and ${matchedTopGenres[1].genre} music`;
+  } else if (matchedTopGenres.length === 1 && matchedRecentGenres.length >= 1) {
+    return `Since you enjoy ${matchedTopGenres[0].genre} and have been exploring ${matchedRecentGenres[0].genre} lately`;
+  } else if (matchedTopGenres.length === 1) {
+    return `Because ${matchedTopGenres[0].genre} is one of your favorite genres`;
+  } else if (matchedRecentGenres.length >= 1) {
+    return `Matching your recent interest in ${matchedRecentGenres[0].genre} music`;
+  }
+  
+  // Generic fallbacks if no clear match
+  const randomTopGenre = topGenres.length > 0 ? topGenres[0].genre : null;
+  if (randomTopGenre) {
+    return `You might enjoy this based on your taste in ${randomTopGenre}`;
+  }
+  
+  return `Recommended based on your listening profile`;
 }

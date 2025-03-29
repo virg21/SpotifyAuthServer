@@ -136,6 +136,103 @@ export abstract class BaseScraper {
   }
   
   /**
+   * Extract price information from text
+   * @param text Text containing price information
+   * @returns Formatted price string or default values
+   */
+  protected extractPrice(text: string): string {
+    if (!text) return 'TBD';
+    
+    const lowerText = text.toLowerCase();
+    
+    // Check for free events
+    if (
+      lowerText.includes('free') || 
+      lowerText.includes('no cover') || 
+      lowerText.includes('no charge')
+    ) {
+      return 'Free Entry';
+    }
+    
+    // Regular expressions to match price patterns
+    const rangeRegex = /\$(\d+)[\s\-–—]*\$?(\d+)/;
+    const singlePriceRegex = /\$(\d+)/;
+    
+    // Try to match price range (e.g., "$30-$50")
+    const rangeMatch = text.match(rangeRegex);
+    if (rangeMatch && rangeMatch.length >= 3) {
+      const lowerPrice = rangeMatch[1];
+      const higherPrice = rangeMatch[2];
+      return `$${lowerPrice}–$${higherPrice}`;
+    }
+    
+    // Try to match single price (e.g., "$30")
+    const singleMatch = text.match(singlePriceRegex);
+    if (singleMatch && singleMatch.length >= 2) {
+      return `$${singleMatch[1]}`;
+    }
+    
+    // Default if no price found
+    return 'TBD';
+  }
+  
+  /**
+   * Generate personalized reason based on user's music summary and event details
+   * @param event Event object
+   * @param musicSummary User's music profile summary
+   * @returns Personalized recommendation reason
+   */
+  protected generateReasonForUser(event: Omit<Event, 'id'>, musicSummary: any): string {
+    if (!musicSummary) return '';
+    
+    // Extract relevant data from music summary and event
+    const topArtists = (musicSummary.topArtists || []) as { name: string, count: number }[];
+    const topGenres = (musicSummary.topGenres || []) as { genre: string, count: number }[];
+    const recentGenres = (musicSummary.recentGenres || []) as { genre: string, count: number }[];
+    const eventGenre = event.genre?.toLowerCase() || '';
+    const eventName = event.name.toLowerCase();
+    
+    // Check for direct artist match first (highest priority)
+    for (const artist of topArtists.slice(0, 5)) { // Only check top 5 artists
+      if (eventName.includes(artist.name.toLowerCase())) {
+        if (artist.count > 50) { // High count indicates it's a favorite
+          return `Your most streamed artist ${artist.name} is performing nearby`;
+        } else {
+          return `Since you've been listening to ${artist.name}`;
+        }
+      }
+    }
+    
+    // Check for genre matches
+    const matchedTopGenres = topGenres.filter(g => 
+      eventGenre.includes(g.genre.toLowerCase())
+    ).slice(0, 2); // Only use up to 2 top genres
+    
+    const matchedRecentGenres = recentGenres.filter(g => 
+      eventGenre.includes(g.genre.toLowerCase())
+    ).slice(0, 2); // Only use up to 2 recent genres
+    
+    // Different message templates for variety
+    if (matchedTopGenres.length >= 2) {
+      return `Based on your love for ${matchedTopGenres[0].genre} and ${matchedTopGenres[1].genre} music`;
+    } else if (matchedTopGenres.length === 1 && matchedRecentGenres.length >= 1) {
+      return `Since you enjoy ${matchedTopGenres[0].genre} and have been exploring ${matchedRecentGenres[0].genre} lately`;
+    } else if (matchedTopGenres.length === 1) {
+      return `Because ${matchedTopGenres[0].genre} is one of your favorite genres`;
+    } else if (matchedRecentGenres.length >= 1) {
+      return `Matching your recent interest in ${matchedRecentGenres[0].genre} music`;
+    }
+    
+    // Generic fallbacks if no clear match
+    const randomTopGenre = topGenres.length > 0 ? topGenres[0].genre : null;
+    if (randomTopGenre) {
+      return `You might enjoy this based on your taste in ${randomTopGenre}`;
+    }
+    
+    return `Recommended based on your listening profile`;
+  }
+  
+  /**
    * Fetch HTML content from a URL
    * @param url URL to fetch
    */

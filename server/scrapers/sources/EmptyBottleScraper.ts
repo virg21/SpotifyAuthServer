@@ -48,6 +48,13 @@ export class EmptyBottleScraper extends BaseScraper {
           // Get ticket link
           const ticketUrl = $(element).find('.show-links a.show-tickets').attr('href') || eventUrl;
           
+          // Extract price information
+          const priceText = this.cleanText($(element).find('.show-price').text() || 
+                                           $(element).find('.show-details').text());
+          
+          // Parse price using our utility method
+          const price = this.extractPrice(priceText);
+          
           // Determine the date
           const date = new Date();
           if (dateText) {
@@ -107,6 +114,8 @@ export class EmptyBottleScraper extends BaseScraper {
             genre: genre || null,
             source: this.name,
             externalId: `empty-bottle-${Buffer.from(eventUrl).toString('base64')}`,
+            price,         // Add extracted price
+            reason: null,  // Will be personalized when events are retrieved
           };
 
           this.events.push(event);

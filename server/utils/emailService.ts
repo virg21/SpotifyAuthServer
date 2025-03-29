@@ -94,7 +94,15 @@ export class EmailService {
    * @param events Array of event details
    * @returns Promise with sending result
    */
-  async sendEventRecommendations(to: string, events: { name: string, venue: string, date: Date, url?: string }[]): Promise<boolean> {
+  async sendEventRecommendations(to: string, events: { 
+    name: string, 
+    venue: string, 
+    date: Date, 
+    url?: string,
+    reason?: string,
+    price?: string,
+    genre?: string
+  }[]): Promise<boolean> {
     const subject = 'Music Events You Might Like';
     
     let eventsHtml = '';
@@ -108,20 +116,33 @@ export class EmailService {
         day: 'numeric',
       });
       
+      // Format time separately
+      const formattedTime = new Date(event.date).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      
       eventsHtml += `
-        <div style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-          <h3 style="margin: 0; color: #333;">${event.name}</h3>
+        <div style="margin-bottom: 30px; border: 1px solid #eee; border-radius: 8px; padding: 20px; background-color: #fafafa;">
+          <h3 style="margin: 0; color: #333; font-size: 20px;">${event.name}</h3>
+          ${event.reason ? `<p style="margin: 10px 0; color: #1DB954; font-style: italic; font-weight: 500;">${event.reason}</p>` : ''}
           <p style="margin: 5px 0; color: #555;"><strong>Venue:</strong> ${event.venue}</p>
-          <p style="margin: 5px 0; color: #555;"><strong>Date:</strong> ${formattedDate}</p>
-          ${event.url ? `<a href="${event.url}" style="display: inline-block; padding: 8px 15px; background-color: #1DB954; color: white; text-decoration: none; border-radius: 4px;">View Details</a>` : ''}
+          <p style="margin: 5px 0; color: #555;"><strong>Date:</strong> ${formattedDate} at ${formattedTime}</p>
+          ${event.genre ? `<p style="margin: 5px 0; color: #555;"><strong>Genre:</strong> ${event.genre}</p>` : ''}
+          ${event.price ? `<p style="margin: 5px 0; color: #555;"><strong>Price:</strong> ${event.price}</p>` : ''}
+          ${event.url ? `<a href="${event.url}" style="display: inline-block; margin-top: 12px; padding: 8px 18px; background-color: #1DB954; color: white; text-decoration: none; border-radius: 50px; font-weight: 500;">View Details & Tickets</a>` : ''}
         </div>
       `;
       
       eventsText += `
 Event: ${event.name}
+${event.reason ? `Why: ${event.reason}` : ''}
 Venue: ${event.venue}
-Date: ${formattedDate}
-${event.url ? `Details: ${event.url}` : ''}
+Date: ${formattedDate} at ${formattedTime}
+${event.genre ? `Genre: ${event.genre}` : ''}
+${event.price ? `Price: ${event.price}` : ''}
+${event.url ? `Details & Tickets: ${event.url}` : ''}
 
 `;
     });

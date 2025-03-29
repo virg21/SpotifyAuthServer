@@ -55,6 +55,8 @@ export const events = pgTable("events", {
   genre: text("genre"),
   source: text("source"),
   externalId: text("external_id").unique(),
+  price: text("price"), // Store price range (e.g., "$30-$50" or "Free Entry")
+  reason: text("reason"), // Personal recommendation reason based on user's music profile
 });
 
 export const playlists = pgTable("playlists", {
