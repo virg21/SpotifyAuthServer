@@ -44,6 +44,7 @@ export const getMusicSummary = async (req: Request, res: Response) => {
         topArtists: musicSummary.topArtists,
         topTracks: musicSummary.topTracks,
         topGenres: musicSummary.topGenres,
+        recentGenres: musicSummary.recentGenres,
         moodScore: musicSummary.moodScore,
         genreProfile: musicSummary.genreProfile,
         eraBias: musicSummary.eraBias
@@ -54,6 +55,7 @@ export const getMusicSummary = async (req: Request, res: Response) => {
         topArtists: musicSummary.topArtists,
         topTracks: musicSummary.topTracks,
         topGenres: musicSummary.topGenres,
+        recentGenres: musicSummary.recentGenres,
         moodScore: musicSummary.moodScore,
         genreProfile: musicSummary.genreProfile,
         eraBias: musicSummary.eraBias,

@@ -27,6 +27,7 @@ export const musicSummaries = pgTable("music_summaries", {
   topArtists: jsonb("top_artists").notNull(),
   topTracks: jsonb("top_tracks").notNull(),
   topGenres: jsonb("top_genres").notNull(),
+  recentGenres: jsonb("recent_genres").default([]),
   moodScore: integer("mood_score"),
   genreProfile: jsonb("genre_profile").notNull(),
   eraBias: jsonb("era_bias").notNull(),

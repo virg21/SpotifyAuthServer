@@ -36,6 +36,7 @@ export interface MusicPersonalitySummary {
   topArtists: SpotifyArtist[];
   topTracks: SpotifyTrack[];
   topGenres: { genre: string; count: number }[];
+  recentGenres: { genre: string; count: number }[];
   moodScore: number;  // 0-100 scale (low = melancholic, high = upbeat)
   genreProfile: { [key: string]: number }; // Categories and their scores
   eraBias: { [key: string]: number }; // Different music eras and their weights
@@ -206,6 +207,43 @@ export class SpotifyApi {
     const topTracksResponse = await this.getUserTopTracks('medium_term', 25);
     const topTracks = topTracksResponse.items;
     
+    // Get recently played tracks for recent genres
+    const recentlyPlayedResponse = await this.getRecentlyPlayed(30);
+    const recentArtistIds = new Set<string>();
+    
+    if (recentlyPlayedResponse?.items) {
+      recentlyPlayedResponse.items.forEach((item: any) => {
+        if (item?.track?.artists) {
+          item.track.artists.forEach((artist: any) => {
+            recentArtistIds.add(artist.id);
+          });
+        }
+      });
+    }
+    
+    // Fetch details for recent artists to get their genres
+    const recentGenres: string[] = [];
+    const recentArtistIdsArray = Array.from(recentArtistIds);
+    
+    // Process in batches of 20 (Spotify API limit)
+    for (let i = 0; i < recentArtistIdsArray.length; i += 20) {
+      const batch = recentArtistIdsArray.slice(i, i + 20);
+      if (batch.length > 0) {
+        try {
+          const artistsResponse = await this.request(`artists?ids=${batch.join(',')}`);
+          if (artistsResponse?.artists) {
+            artistsResponse.artists.forEach((artist: any) => {
+              if (artist.genres) {
+                recentGenres.push(...artist.genres);
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching recent artists:', error);
+        }
+      }
+    }
+    
     // Extract all genres from top artists
     const genres: string[] = [];
     topArtists.forEach(artist => {
@@ -218,11 +256,23 @@ export class SpotifyApi {
       genreCounts[genre] = (genreCounts[genre] || 0) + 1;
     });
     
+    // Count recent genre occurrences
+    const recentGenreCounts: { [key: string]: number } = {};
+    recentGenres.forEach(genre => {
+      recentGenreCounts[genre] = (recentGenreCounts[genre] || 0) + 1;
+    });
+    
     // Convert to sorted array
     const topGenres = Object.entries(genreCounts)
       .map(([genre, count]) => ({ genre, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);
+      
+    // Convert recent genres to sorted array
+    const processedRecentGenres = Object.entries(recentGenreCounts)
+      .map(([genre, count]) => ({ genre, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
     
     // Get audio features for top tracks
     const trackIds = topTracks.map(track => track.id);
@@ -319,6 +369,7 @@ export class SpotifyApi {
       topArtists,
       topTracks,
       topGenres,
+      recentGenres: processedRecentGenres,
       moodScore,
       genreProfile,
       eraBias,
