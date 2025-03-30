@@ -15,28 +15,14 @@ const ConnectSpotify: React.FC = () => {
     return `${hours}:${minutes}`;
   };
   
-  const handleConnectSpotify = async () => {
+  const handleConnectSpotify = () => {
     setIsConnecting(true);
     
-    try {
-      // Get the authorization URL from the backend
-      const response = await fetch('/api/auth/login');
-      if (response.ok) {
-        // In a real application, this would redirect to Spotify's auth page
-        // For our demo purposes, we'll simulate by redirecting to the auth-success page
-        setTimeout(() => {
-          // Normally, Spotify would redirect back to our callback URL
-          // Here we're just simulating that flow by going to the analyzing page
-          setLocation('/analyzing-music');
-        }, 1500);
-      } else {
-        console.error('Failed to initiate Spotify authentication flow');
-        setIsConnecting(false);
-      }
-    } catch (error) {
-      console.error('Error connecting to Spotify:', error);
-      setIsConnecting(false);
-    }
+    // For demo purposes, we'll just simulate the Spotify connection
+    // and redirect to the analyzing music page after a brief delay
+    setTimeout(() => {
+      setLocation('/analyzing-music');
+    }, 1500);
   };
   
   const handleSkip = () => {
