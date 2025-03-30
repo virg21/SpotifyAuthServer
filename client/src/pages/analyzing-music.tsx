@@ -1,0 +1,192 @@
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import MobileLayout from '@/components/MobileLayout';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, CheckCircle, MapPin } from 'lucide-react';
+
+// Map placeholder component - in a real app, you'd use a mapping library like Leaflet or Google Maps
+const MapPlaceholder: React.FC<{ userName?: string }> = ({ userName = "Brandon Campbell" }) => {
+  return (
+    <div className="relative w-full aspect-square bg-neutral-200 rounded-lg mb-4 overflow-hidden">
+      {/* Simple map grid lines */}
+      <div className="absolute inset-0 grid grid-cols-8 grid-rows-8">
+        {Array.from({ length: 64 }).map((_, i) => (
+          <div key={i} className="border border-neutral-300/30"></div>
+        ))}
+      </div>
+      
+      {/* Center pin/marker */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="w-6 h-6 bg-black rounded-full border-2 border-white flex items-center justify-center pulse-animation">
+          <div className="w-2 h-2 bg-white rounded-full"></div>
+        </div>
+      </div>
+      
+      {/* User label */}
+      <div className="absolute bottom-4 left-4 bg-blue-600/80 text-white px-3 py-1 rounded-md text-sm shadow-md">
+        {userName}
+      </div>
+    </div>
+  );
+};
+
+// Array of music facts to display
+const musicFacts = [
+  "You vibe with more jazz than 86% of listeners.",
+  "You stream artists tied to 12 different neighborhoods in Chicago.",
+  "Your top genre has roots in Chicago's South Side music scene.",
+  "Kanye West, one of your frequent listens, grew up in Chicago's South Shore.",
+  "Your taste in house music connects to Chicago, where the genre was born in the 80s.",
+  "Your favorite soul artists share influences with Chicago's Chess Records legacy.",
+  "You listen to more indie rock than 72% of people in your area.",
+  "Three of your top artists have performed at Chicago's Lollapalooza festival.",
+  "Your playlist diversity is higher than 91% of users in your city.",
+  "The blues influence in your music taste traces back to Chicago's historical clubs."
+];
+
+// Analysis steps to display
+const analysisSteps = [
+  { id: 1, text: "Analyzing your genres & artists", complete: false },
+  { id: 2, text: "Locating your music zones", complete: false },
+  { id: 3, text: "Mapping real-world matches", complete: false },
+  { id: 4, text: "Personalizing your music-powered city guide", complete: false }
+];
+
+const AnalyzingMusicPage: React.FC = () => {
+  const [, setLocation] = useLocation();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [displayedFacts, setDisplayedFacts] = useState<string[]>([]);
+  const [isComplete, setIsComplete] = useState(false);
+
+  // Get current time for the status bar
+  const getCurrentTime = () => {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  // Simulate loading steps
+  useEffect(() => {
+    if (currentStep <= analysisSteps.length) {
+      const timer = setTimeout(() => {
+        setCurrentStep(prev => prev + 1);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    } else if (currentStep > analysisSteps.length && !isComplete) {
+      setIsComplete(true);
+      
+      // After all steps are complete, redirect to events page after a delay
+      const redirectTimer = setTimeout(() => {
+        setLocation('/events');
+      }, 8000);
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [currentStep, isComplete, setLocation]);
+
+  // Add a new fact every few seconds
+  useEffect(() => {
+    if (displayedFacts.length < musicFacts.length && currentStep > 1) {
+      const timer = setTimeout(() => {
+        setDisplayedFacts(prev => {
+          // Get a random fact that hasn't been displayed yet
+          const availableFacts = musicFacts.filter(fact => !prev.includes(fact));
+          if (availableFacts.length === 0) return prev;
+          
+          const randomIndex = Math.floor(Math.random() * availableFacts.length);
+          return [...prev, availableFacts[randomIndex]];
+        });
+      }, 4000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [displayedFacts, currentStep]);
+
+  return (
+    <MobileLayout 
+      showNav={true} 
+      back={false} 
+      title="ShiipMusic" 
+      showStatusBar={true}
+      time={getCurrentTime()}
+      activeTab="home"
+    >
+      <div className="flex flex-col items-center justify-start h-full pb-20">
+        {/* Map visualization */}
+        <MapPlaceholder />
+        
+        {/* Title */}
+        <h1 className="text-2xl font-bold mb-4 text-center">WE'RE TUNING YOUR VIBE 🎧</h1>
+        
+        {/* Progress steps */}
+        <div className="w-full mb-6">
+          {analysisSteps.map((step, index) => {
+            const isComplete = currentStep > step.id;
+            const isActive = currentStep === step.id;
+            
+            return (
+              <div 
+                key={step.id} 
+                className={`flex items-center justify-between py-3 border-b border-gray-200 ${isActive ? 'animate-pulse' : ''}`}
+              >
+                <div className="flex items-center">
+                  {isComplete ? (
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                  ) : (
+                    <Loader2 className={`h-5 w-5 mr-3 ${isActive ? 'animate-spin text-blue-500' : 'text-gray-300'}`} />
+                  )}
+                  <span className={`${isComplete ? 'text-gray-700' : isActive ? 'text-gray-800' : 'text-gray-400'}`}>
+                    {step.text}
+                  </span>
+                </div>
+                <span className="text-gray-400">
+                  {isComplete ? '✓' : isActive ? '...' : '...'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Fun facts section */}
+        {displayedFacts.length > 0 && (
+          <div className="w-full mb-6">
+            <h2 className="text-sm font-semibold uppercase text-gray-500 mb-2">FUN FACTS</h2>
+            
+            {displayedFacts.map((fact, index) => (
+              <div 
+                key={index} 
+                className="flex items-center justify-between py-3 border-b border-gray-200 animate-fade-in"
+              >
+                <div className="flex items-center">
+                  <div className="h-4 w-4 rounded-full border border-gray-400 mr-3"></div>
+                  <span className="text-gray-700">{fact}</span>
+                </div>
+                <div className="h-4 w-4 rounded-full border border-gray-400"></div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Location-based fact when analysis is complete */}
+        {currentStep > analysisSteps.length && (
+          <div className="w-full mt-4 bg-blue-50 p-4 rounded-lg border border-blue-200 animate-fade-in">
+            <div className="flex items-start">
+              <MapPin className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+              <div>
+                <p className="font-medium text-blue-700">Location insight:</p>
+                <p className="text-blue-800">
+                  Based on your location and music taste, you're near Chicago's Wicker Park - 
+                  a neighborhood where 3 of your top artists have performed at legendary venue The Empty Bottle!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </MobileLayout>
+  );
+};
+
+export default AnalyzingMusicPage;

@@ -1,27 +1,13 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import MobileLayout from '@/components/MobileLayout';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useToast } from '@/hooks/use-toast';
+import { PhoneIcon, MapPin } from 'lucide-react';
 
-// Form schema validation
-const phoneSchema = z.object({
-  phoneNumber: z.string()
-    .min(10, { message: "Phone number must be at least 10 digits" })
-    .regex(/^\d+$/, { message: "Phone number can only contain digits" }),
-  verificationCode: z.string().optional()
-});
-
-type PhoneFormValues = z.infer<typeof phoneSchema>;
-
-const WelcomePage = () => {
+const WelcomePage: React.FC = () => {
   const [, setLocation] = useLocation();
-  const [verificationSent, setVerificationSent] = useState(false);
-  const { toast } = useToast();
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [locationShared, setLocationShared] = useState(false);
   
   // Get current time for the status bar
   const getCurrentTime = () => {
@@ -30,167 +16,117 @@ const WelcomePage = () => {
     const minutes = now.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
   };
-
-  const { register, handleSubmit, formState: { errors } } = useForm<PhoneFormValues>({
-    resolver: zodResolver(phoneSchema),
-    defaultValues: {
-      phoneNumber: '',
-      verificationCode: ''
-    }
-  });
-
-  const onSendCode = async (data: PhoneFormValues) => {
-    try {
-      // In a real app, we would send this to the server
-      // const response = await fetch('/api/verify/phone', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ phoneNumber: data.phoneNumber })
-      // });
-      
-      // if (!response.ok) throw new Error('Failed to send verification code');
-      
-      // For demo purposes, we'll just set the state
-      setVerificationSent(true);
-      toast({
-        title: "Verification code sent!",
-        description: `We've sent a verification code to ${data.phoneNumber}`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send verification code. Please try again.",
-        variant: "destructive"
-      });
-    }
+  
+  const handleVerifyPhone = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // In a real app, this would call an API to send a verification code
+    setTimeout(() => {
+      setIsLoading(false);
+      // Navigate to the Spotify connect page
+      setLocation('/connect-spotify');
+    }, 1500);
   };
-
-  const onVerifyCode = async (data: PhoneFormValues) => {
-    try {
-      // In a real app, we would verify the code with the server
-      // const response = await fetch('/api/verify/code', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ 
-      //     phoneNumber: data.phoneNumber,
-      //     code: data.verificationCode
-      //   })
-      // });
-      
-      // if (!response.ok) throw new Error('Invalid verification code');
-      
-      // For demo purposes, we'll just redirect to the next page
-      toast({
-        title: "Success!",
-        description: "Phone number verified successfully.",
-      });
-      
-      // Redirect to Spotify connect page
-      setTimeout(() => {
-        setLocation('/connect-spotify');
-      }, 1000);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Invalid verification code. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
+  
   const handleShareLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // In a real app, we would send the coordinates to the server
-          // const { latitude, longitude } = position.coords;
-          // fetch('/api/user/location', {
-          //   method: 'POST',
-          //   headers: { 'Content-Type': 'application/json' },
-          //   body: JSON.stringify({ latitude, longitude })
-          // });
-          
-          toast({
-            title: "Location shared",
-            description: "Your location has been shared successfully.",
-          });
-        },
-        (error) => {
-          toast({
-            title: "Error",
-            description: "Failed to get your location. Please try again.",
-            variant: "destructive"
-          });
-        }
-      );
-    } else {
-      toast({
-        title: "Error",
-        description: "Geolocation is not supported by your browser.",
-        variant: "destructive"
-      });
-    }
+    setLocationShared(true);
+    
+    // In a real app, this would request geolocation permission
+    navigator.geolocation?.getCurrentPosition(
+      (position) => {
+        console.log('Location shared:', position.coords);
+        // Here you would store the coordinates in state or context
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        setLocationShared(false);
+      }
+    );
   };
-
+  
   return (
     <MobileLayout 
-      showNav={true} 
+      showNav={false} 
       back={false} 
       title="ShiipMusic" 
       showStatusBar={true}
       time={getCurrentTime()}
-      activeTab="home"
     >
-      <div className="flex flex-col items-center justify-start h-full">
+      <div className="flex flex-col items-center justify-start pt-6 pb-12">
+        {/* Logo or app icon */}
+        <div className="w-24 h-24 bg-gradient-primary rounded-xl mb-8 flex items-center justify-center">
+          <span className="text-white text-3xl">🎵</span>
+        </div>
+        
+        <h1 className="text-3xl font-bold mb-2 text-center">Welcome to ShiipMusic</h1>
+        <p className="text-neutral-600 text-center mb-8">
+          Discover local music events based on your taste
+        </p>
+        
+        {/* Phone verification form */}
         <div className="w-full mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            <span className="music-note">♪</span> Navigate Your City Through Music
-          </h1>
-          <p className="text-neutral-700 text-lg mb-8">
-            We use your music to find local experiences you'll love.
-          </p>
-          
-          <form onSubmit={handleSubmit(verificationSent ? onVerifyCode : onSendCode)} className="space-y-4">
-            <div>
-              <Input
-                type="tel"
-                placeholder="Enter your phone number"
-                className={`input-field ${errors.phoneNumber ? 'border-red-500' : ''}`}
-                {...register('phoneNumber')}
-              />
-              {errors.phoneNumber && (
-                <p className="text-red-500 text-sm mt-1">{errors.phoneNumber.message}</p>
-              )}
+          <form onSubmit={handleVerifyPhone}>
+            <div className="mb-4">
+              <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 mb-1">
+                Enter your phone number to continue
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <PhoneIcon className="h-5 w-5 text-neutral-500" />
+                </div>
+                <input
+                  type="tel"
+                  id="phone"
+                  placeholder="+1 (555) 123-4567"
+                  className="input-field pl-10"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
+                />
+              </div>
+              <p className="text-xs text-neutral-500 mt-1">
+                We'll send a verification code to this number
+              </p>
             </div>
             
-            {verificationSent && (
-              <div>
-                <Input
-                  type="text"
-                  placeholder="Enter verification code"
-                  className={`input-field ${errors.verificationCode ? 'border-red-500' : ''}`}
-                  {...register('verificationCode')}
-                />
-                {errors.verificationCode && (
-                  <p className="text-red-500 text-sm mt-1">{errors.verificationCode.message}</p>
-                )}
-              </div>
-            )}
-            
-            <Button type="submit" className="w-full py-4 bg-neutral-800 hover:bg-neutral-700">
-              {verificationSent ? 'Verify Code' : 'Send Code'}
-            </Button>
+            <button 
+              type="submit" 
+              className="btn-primary"
+              disabled={isLoading || !phoneNumber}
+            >
+              {isLoading ? 'Sending code...' : 'Get Verification Code'}
+            </button>
           </form>
-          
-          <Button 
-            type="button" 
-            variant="outline"
-            className="w-full py-4 mt-4 border-neutral-300"
-            onClick={handleShareLocation}
-          >
-            Share My Location
-          </Button>
         </div>
+        
+        {/* Location sharing option */}
+        <div className="w-full">
+          <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200">
+            <div className="flex items-start mb-3">
+              <MapPin className="h-5 w-5 text-neutral-700 mr-2 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-neutral-800">Share your location</h3>
+                <p className="text-sm text-neutral-600">
+                  Find music events near you and get location-specific recommendations
+                </p>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleShareLocation}
+              className="btn-secondary py-2 mt-2 mb-0"
+              disabled={locationShared}
+            >
+              {locationShared ? '✓ Location shared' : 'Share My Location'}
+            </button>
+          </div>
+        </div>
+        
+        {/* Terms and privacy note */}
+        <p className="text-xs text-neutral-500 mt-8 text-center">
+          By continuing, you agree to our Terms of Service and Privacy Policy
+        </p>
       </div>
     </MobileLayout>
   );

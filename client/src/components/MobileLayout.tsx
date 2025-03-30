@@ -1,18 +1,19 @@
 import React, { FC, ReactNode } from 'react';
-import { Link, useLocation } from 'wouter';
+import { useLocation } from 'wouter';
+import { ChevronLeft, Home, Search, Compass } from 'lucide-react';
 
 interface StatusBarProps {
   time?: string;
 }
 
-export const StatusBar: FC<StatusBarProps> = ({ time = '10:45' }) => {
+export const StatusBar: FC<StatusBarProps> = ({ time = '12:00' }) => {
   return (
     <div className="status-bar">
       <div>{time}</div>
       <div className="flex space-x-1">
-        <div className="h-2 w-2 rounded-full bg-neutral-800"></div>
-        <div className="h-2 w-2 rounded-full bg-neutral-500"></div>
-        <div className="h-2 w-2 rounded-full bg-neutral-800"></div>
+        <span>●</span>
+        <span>●</span>
+        <span>●</span>
       </div>
     </div>
   );
@@ -24,11 +25,7 @@ interface AppHeaderProps {
   onBack?: () => void;
 }
 
-export const AppHeader: FC<AppHeaderProps> = ({ 
-  title = 'ShiipMusic', 
-  back = false,
-  onBack
-}) => {
+export const AppHeader: FC<AppHeaderProps> = ({ title = 'ShiipMusic', back = false, onBack }) => {
   return (
     <header className="app-header">
       {back && (
@@ -37,10 +34,7 @@ export const AppHeader: FC<AppHeaderProps> = ({
           className="absolute left-4 text-neutral-800"
           aria-label="Go back"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft size={24} />
         </button>
       )}
       <h1 className="app-logo">{title}</h1>
@@ -53,24 +47,24 @@ interface BottomNavProps {
 }
 
 export const BottomNav: FC<BottomNavProps> = ({ activeTab = 'home' }) => {
+  const [, setLocation] = useLocation();
+  
   return (
     <nav className="nav-bottom">
-      <Link href="/">
-        <div className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-        </div>
-      </Link>
-      <Link href="/search">
-        <div className={`nav-item ${activeTab === 'search' ? 'active' : ''}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </div>
-      </Link>
+      <a 
+        href="#" 
+        onClick={(e) => { e.preventDefault(); setLocation('/home'); }} 
+        className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+      >
+        <Home size={24} />
+      </a>
+      <a 
+        href="#" 
+        onClick={(e) => { e.preventDefault(); setLocation('/events'); }} 
+        className={`nav-item ${activeTab === 'search' ? 'active' : ''}`}
+      >
+        <Search size={24} />
+      </a>
     </nav>
   );
 };
@@ -98,7 +92,7 @@ const MobileLayout: FC<MobileLayoutProps> = ({
   onBack,
   time
 }) => {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   
   const handleBack = () => {
     if (onBack) {

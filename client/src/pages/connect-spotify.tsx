@@ -1,14 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import MobileLayout from '@/components/MobileLayout';
+import { Music, Headphones, Calendar, MapPin } from 'lucide-react';
 
-const ConnectSpotifyPage = () => {
-  const [location, setLocation] = useLocation();
-  
-  const handleConnectSpotify = () => {
-    // Redirect to our API endpoint that will handle the Spotify OAuth flow
-    window.location.href = '/api/auth/login';
-  };
+const ConnectSpotify: React.FC = () => {
+  const [, setLocation] = useLocation();
+  const [isConnecting, setIsConnecting] = useState(false);
   
   // Get current time for the status bar
   const getCurrentTime = () => {
@@ -17,16 +14,45 @@ const ConnectSpotifyPage = () => {
     const minutes = now.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
   };
-
+  
+  const handleConnectSpotify = async () => {
+    setIsConnecting(true);
+    
+    try {
+      // Get the authorization URL from the backend
+      const response = await fetch('/api/auth/login');
+      if (response.ok) {
+        // In a real application, this would redirect to Spotify's auth page
+        // For our demo purposes, we'll simulate by redirecting to the auth-success page
+        setTimeout(() => {
+          // Normally, Spotify would redirect back to our callback URL
+          // Here we're just simulating that flow by going to the analyzing page
+          setLocation('/analyzing-music');
+        }, 1500);
+      } else {
+        console.error('Failed to initiate Spotify authentication flow');
+        setIsConnecting(false);
+      }
+    } catch (error) {
+      console.error('Error connecting to Spotify:', error);
+      setIsConnecting(false);
+    }
+  };
+  
+  const handleSkip = () => {
+    // Go to the events page without connecting to Spotify
+    setLocation('/events');
+  };
+  
   return (
     <MobileLayout 
       showNav={false} 
-      back={false} 
+      back={true} 
       title="ShiipMusic" 
       showStatusBar={true}
       time={getCurrentTime()}
     >
-      <div className="flex flex-col items-center justify-center h-full">
+      <div className="flex flex-col items-center justify-start h-full">
         <div className="mb-6 w-full">
           {/* Background image similar to the provided design */}
           <div className="bg-gradient-to-br from-pink-400 via-purple-500 to-green-400 w-full aspect-square flex items-center justify-center mb-6">
@@ -44,27 +70,75 @@ const ConnectSpotifyPage = () => {
             </div>
           </div>
           
-          <h1 className="text-3xl font-bold mb-4">Connect your Spotify</h1>
+          <h1 className="text-2xl font-bold mb-3 text-center">Connect Your Spotify</h1>
+          <p className="text-neutral-600 text-center mb-8">
+            Get personalized event recommendations based on your music taste
+          </p>
           
-          {/* Lines mimicking text from the design */}
-          <div className="mb-6 space-y-2">
-            <div className="h-2 bg-gray-200 rounded w-full"></div>
-            <div className="h-2 bg-gray-200 rounded w-11/12"></div>
-            <div className="h-2 bg-gray-200 rounded w-10/12"></div>
-            <div className="h-2 bg-gray-200 rounded w-4/12"></div>
+          {/* Benefits of connecting */}
+          <div className="space-y-4 mb-8">
+            <div className="flex items-start">
+              <div className="mt-1 mr-4 bg-green-100 p-2 rounded-full">
+                <Music className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-neutral-800">Personalized Music Insights</h3>
+                <p className="text-sm text-neutral-600">
+                  Discover your unique music personality and listening habits
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-start">
+              <div className="mt-1 mr-4 bg-blue-100 p-2 rounded-full">
+                <Calendar className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-neutral-800">Tailored Event Recommendations</h3>
+                <p className="text-sm text-neutral-600">
+                  Find concerts and events matching your favorite genres and artists
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-start">
+              <div className="mt-1 mr-4 bg-purple-100 p-2 rounded-full">
+                <Headphones className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-neutral-800">Custom Playlists for Events</h3>
+                <p className="text-sm text-neutral-600">
+                  Get exclusive playlists tailored to local music events
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Connect button */}
+          <button 
+            onClick={handleConnectSpotify} 
+            disabled={isConnecting}
+            className="btn-spotify"
+          >
+            {isConnecting ? 'Connecting...' : 'Connect with Spotify'}
+          </button>
+          
+          {/* Skip option */}
+          <div className="text-center">
+            <button 
+              onClick={handleSkip}
+              className="text-neutral-500 text-sm font-medium"
+            >
+              Skip for now
+            </button>
+            <p className="text-xs text-neutral-400 mt-1">
+              You can always connect later
+            </p>
           </div>
         </div>
-        
-        {/* Spotify connect button */}
-        <button 
-          onClick={handleConnectSpotify}
-          className="w-full py-3 px-6 bg-neutral-700 hover:bg-neutral-800 text-white font-medium rounded-md transition-colors duration-200 mb-4"
-        >
-          Connect with Spotify
-        </button>
       </div>
     </MobileLayout>
   );
 };
 
-export default ConnectSpotifyPage;
+export default ConnectSpotify;
