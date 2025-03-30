@@ -7,25 +7,116 @@
     @apply border-border;
   }
 
+  html, body {
+    @apply h-full;
+  }
+
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-white text-neutral-900;
+    font-family: 'Inter', sans-serif;
   }
   
   :root {
-    --primary-light: #4f46e5;
-    --primary-dark: #4338ca;
+    /* App colors */
+    --app-primary: #1DB954; /* Spotify green */
+    --app-dark: #121212;
+    --app-light: #FFFFFF;
+    --app-gray: #F5F5F5;
+    --app-accent: #FF6B6B;
+    
+    /* For gradient support */
+    --primary-light: var(--app-primary);
+    --primary-dark: #0E9D40;
+  }
+  
+  #root {
+    @apply flex flex-col min-h-full;
+  }
+}
+
+/* App-specific styles */
+@layer components {
+  .mobile-container {
+    @apply mx-auto max-w-md min-h-screen flex flex-col relative bg-white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .app-header {
+    @apply w-full px-4 py-3 flex items-center justify-center border-b border-neutral-100 relative;
+  }
+  
+  .app-logo {
+    @apply text-xl font-bold;
+  }
+  
+  .app-content {
+    @apply flex-1 overflow-auto p-6;
+  }
+  
+  .status-bar {
+    @apply flex justify-between items-center px-4 py-2 text-sm text-neutral-800;
+  }
+  
+  .nav-bottom {
+    @apply flex items-center justify-around py-3 border-t border-neutral-200 bg-white;
+  }
+  
+  .nav-item {
+    @apply flex flex-col items-center justify-center px-4 py-1 text-xs text-neutral-600;
+  }
+  
+  .nav-item.active {
+    @apply text-app-primary;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 rounded-md border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[var(--app-primary)] focus:border-[var(--app-primary)] mb-4;
+  }
+  
+  .btn-primary {
+    @apply w-full py-3 px-6 bg-neutral-800 hover:bg-neutral-700 text-white font-medium rounded-md transition-colors duration-200 mb-4;
+  }
+  
+  .btn-secondary {
+    @apply w-full py-3 px-6 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-800 font-medium rounded-md transition-colors duration-200 mb-4;
+  }
+  
+  .btn-spotify {
+    @apply w-full py-3 px-6 bg-[#1DB954] hover:bg-[#1AA84A] text-white font-medium rounded-md transition-colors duration-200 mb-4;
+  }
+  
+  .event-card {
+    @apply border border-neutral-200 rounded-lg overflow-hidden mb-4;
+  }
+  
+  .event-image {
+    @apply w-full h-40 object-cover;
   }
 }
 
 /* Custom utility classes */
 @layer utilities {
+  .bg-app-primary {
+    background-color: var(--app-primary);
+  }
+  
+  .text-app-primary {
+    color: var(--app-primary);
+  }
+  
   .bg-gradient-primary {
-    background-image: linear-gradient(to bottom right, var(--primary), var(--primary-light));
+    background-image: linear-gradient(to bottom right, var(--app-primary), var(--primary-dark));
   }
   
   .text-gradient {
-    background-image: linear-gradient(to right, var(--primary), var(--primary-dark));
+    background-image: linear-gradient(to right, var(--app-primary), var(--primary-dark));
     background-clip: text;
     color: transparent;
+  }
+  
+  .music-note {
+    font-size: 1.5em;
+    line-height: 1;
+    margin-right: 0.25rem;
   }
 }

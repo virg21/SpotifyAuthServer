@@ -7,6 +7,8 @@ import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import LoadersDemo from "@/pages/loaders-demo";
 import EventsPage from "@/pages/events";
+import ConnectSpotify from "@/pages/connect-spotify";
+import AuthSuccess from "@/pages/auth-success";
 import Navigation from "@/components/navigation";
 
 function Router() {
@@ -16,8 +18,9 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/loaders" component={LoadersDemo} />
       <Route path="/events" component={EventsPage} />
+      <Route path="/connect-spotify" component={ConnectSpotify} />
+      <Route path="/auth-success" component={AuthSuccess} />
       {/* Future routes */}
-      {/* <Route path="/auth" component={Authentication} /> */}
       {/* <Route path="/api-routes" component={ApiRoutes} /> */}
       {/* <Route path="/users" component={Users} /> */}
       {/* <Route path="/settings" component={Settings} /> */}

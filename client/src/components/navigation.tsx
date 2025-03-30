@@ -65,7 +65,16 @@ export const Navigation: FC = () => {
               </Link>
             </div>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+          <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-2">
+            <Link href="/connect-spotify">
+              <Button 
+                variant="default" 
+                size="sm"
+                className="bg-[#1DB954] hover:bg-[#1AA84A] text-white"
+              >
+                Connect Spotify
+              </Button>
+            </Link>
             <Button variant="outline" size="sm">
               Documentation
             </Button>
@@ -118,6 +127,14 @@ export const Navigation: FC = () => {
               )}
             >
               Loaders
+            </Button>
+          </Link>
+          <Link href="/connect-spotify">
+            <Button 
+              variant="default"
+              className="w-full justify-start rounded-md px-3 py-2 text-base font-medium bg-[#1DB954] hover:bg-[#1AA84A] text-white"
+            >
+              Connect Spotify
             </Button>
           </Link>
         </div>
