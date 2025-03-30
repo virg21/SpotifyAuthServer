@@ -184,7 +184,12 @@ export const getPersonalizedMoodRecommendations = async (req: Request, res: Resp
     // Extract genres from music summary
     const topGenres = Array.isArray(musicSummary.topGenres) ? musicSummary.topGenres : [];
     const recentGenres = Array.isArray(musicSummary.recentGenres) ? musicSummary.recentGenres : [];
-    const userGenres = [...topGenres, ...recentGenres];
+    
+    // Get just the genre names from the objects
+    const userGenreStrings = [
+      ...topGenres.map(g => g.genre?.toLowerCase() || ''),
+      ...recentGenres.map(g => g.genre?.toLowerCase() || '')
+    ].filter(genre => genre !== '');
     
     // Map user genres to moods 
     const userMoods: MoodCategory[] = [];
@@ -192,9 +197,9 @@ export const getPersonalizedMoodRecommendations = async (req: Request, res: Resp
     Object.entries(moodToGenreMapping).forEach(([mood, genres]) => {
       // Check if user genres overlap with this mood's genres
       const hasMatchingGenres = genres.some(genre => 
-        userGenres.some(userGenre => 
-          userGenre.toLowerCase().includes(genre.toLowerCase()) || 
-          genre.toLowerCase().includes(userGenre.toLowerCase())
+        userGenreStrings.some(userGenre => 
+          userGenre.includes(genre.toLowerCase()) || 
+          genre.toLowerCase().includes(userGenre)
         )
       );
       

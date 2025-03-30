@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import LoadersDemo from "@/pages/loaders-demo";
+import EventsPage from "@/pages/events";
 import Navigation from "@/components/navigation";
 
 function Router() {
@@ -14,10 +15,10 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/loaders" component={LoadersDemo} />
+      <Route path="/events" component={EventsPage} />
       {/* Future routes */}
       {/* <Route path="/auth" component={Authentication} /> */}
       {/* <Route path="/api-routes" component={ApiRoutes} /> */}
-      {/* <Route path="/events" component={Events} /> */}
       {/* <Route path="/users" component={Users} /> */}
       {/* <Route path="/settings" component={Settings} /> */}
       

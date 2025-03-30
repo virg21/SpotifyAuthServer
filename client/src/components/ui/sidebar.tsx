@@ -12,8 +12,7 @@ const Sidebar: FC = () => {
     { 
       name: "Events", 
       href: "/events", 
-      icon: "calendar", 
-      badge: "Future" 
+      icon: "calendar"
     },
     { 
       name: "Users", 

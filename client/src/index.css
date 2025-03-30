@@ -10,4 +10,22 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+  
+  :root {
+    --primary-light: #4f46e5;
+    --primary-dark: #4338ca;
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .bg-gradient-primary {
+    background-image: linear-gradient(to bottom right, var(--primary), var(--primary-light));
+  }
+  
+  .text-gradient {
+    background-image: linear-gradient(to right, var(--primary), var(--primary-dark));
+    background-clip: text;
+    color: transparent;
+  }
 }

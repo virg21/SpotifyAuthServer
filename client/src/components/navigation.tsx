@@ -41,6 +41,17 @@ export const Navigation: FC = () => {
                   Dashboard
                 </Button>
               </Link>
+              <Link href="/events">
+                <Button 
+                  variant={isActive("/events") ? "default" : "ghost"}
+                  className={cn(
+                    "rounded-md px-3 py-2 text-sm font-medium",
+                    isActive("/events") ? "bg-primary text-white" : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  Events
+                </Button>
+              </Link>
               <Link href="/loaders">
                 <Button 
                   variant={isActive("/loaders") ? "default" : "ghost"}
@@ -85,6 +96,17 @@ export const Navigation: FC = () => {
               )}
             >
               Dashboard
+            </Button>
+          </Link>
+          <Link href="/events">
+            <Button 
+              variant={isActive("/events") ? "default" : "ghost"}
+              className={cn(
+                "w-full justify-start rounded-md px-3 py-2 text-base font-medium",
+                isActive("/events") ? "bg-primary text-white" : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              Events
             </Button>
           </Link>
           <Link href="/loaders">
