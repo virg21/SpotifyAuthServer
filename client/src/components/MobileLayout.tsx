@@ -95,6 +95,7 @@ interface MobileLayoutProps {
   activeTab?: 'home' | 'search' | 'explore';
   back?: boolean;
   onBack?: () => void;
+  time?: string;
 }
 
 const MobileLayout: FC<MobileLayoutProps> = ({
@@ -105,7 +106,8 @@ const MobileLayout: FC<MobileLayoutProps> = ({
   title,
   activeTab,
   back = false,
-  onBack
+  onBack,
+  time
 }) => {
   const [location, setLocation] = useLocation();
   
@@ -119,7 +121,7 @@ const MobileLayout: FC<MobileLayoutProps> = ({
   
   return (
     <div className="mobile-container">
-      {showStatusBar && <StatusBar />}
+      {showStatusBar && <StatusBar time={time} />}
       {showHeader && <AppHeader title={title} back={back} onBack={handleBack} />}
       <main className="app-content">
         {children}
