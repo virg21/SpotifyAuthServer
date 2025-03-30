@@ -9,12 +9,14 @@ import LoadersDemo from "@/pages/loaders-demo";
 import EventsPage from "@/pages/events";
 import ConnectSpotify from "@/pages/connect-spotify";
 import AuthSuccess from "@/pages/auth-success";
+import WelcomePage from "@/pages/welcome";
 import Navigation from "@/components/navigation";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={WelcomePage} />
+      <Route path="/home" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/loaders" component={LoadersDemo} />
       <Route path="/events" component={EventsPage} />

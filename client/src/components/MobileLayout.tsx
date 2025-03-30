@@ -56,31 +56,20 @@ export const BottomNav: FC<BottomNavProps> = ({ activeTab = 'home' }) => {
   return (
     <nav className="nav-bottom">
       <Link href="/">
-        <a className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
-          <span className="mt-1">Home</span>
-        </a>
+        </div>
       </Link>
       <Link href="/search">
-        <a className={`nav-item ${activeTab === 'search' ? 'active' : ''}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className={`nav-item ${activeTab === 'search' ? 'active' : ''}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <span className="mt-1">Search</span>
-        </a>
-      </Link>
-      <Link href="/explore">
-        <a className={`nav-item ${activeTab === 'explore' ? 'active' : ''}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-          </svg>
-          <span className="mt-1">Explore</span>
-        </a>
+        </div>
       </Link>
     </nav>
   );
