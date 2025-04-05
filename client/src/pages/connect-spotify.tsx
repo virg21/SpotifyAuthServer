@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import MobileLayout from '@/components/MobileLayout';
-import { Music, Headphones, Calendar, MapPin } from 'lucide-react';
+import { Music, Headphones, Calendar } from 'lucide-react';
 
 const ConnectSpotify: React.FC = () => {
   const [, setLocation] = useLocation();
@@ -39,15 +39,15 @@ const ConnectSpotify: React.FC = () => {
       time={getCurrentTime()}
     >
       <div className="flex flex-col items-center justify-start h-full">
-        <div className="mb-6 w-full">
+        <div className="w-full">
           {/* Background image similar to the provided design */}
-          <div className="bg-gradient-to-br from-pink-400 via-purple-500 to-green-400 w-full aspect-square flex items-center justify-center mb-6">
+          <div className="bg-gradient-to-br from-purple-500 via-pink-400 to-green-400 w-full aspect-video rounded-xl mb-10 flex items-center justify-center">
             {/* Spotify logo */}
-            <div className="bg-black rounded-full w-32 h-32 flex items-center justify-center">
+            <div className="bg-black rounded-full w-28 h-28 flex items-center justify-center">
               <svg 
                 viewBox="0 0 24 24" 
-                width="80" 
-                height="80" 
+                width="70" 
+                height="70" 
                 className="text-[#1DB954]"
                 fill="currentColor"
               >
@@ -56,45 +56,45 @@ const ConnectSpotify: React.FC = () => {
             </div>
           </div>
           
-          <h1 className="text-2xl font-bold mb-3 text-center">Connect Your Spotify</h1>
-          <p className="text-neutral-600 text-center mb-8">
-            Get personalized event recommendations based on your music taste
+          <h1 className="text-3xl font-bold mb-4 text-center text-white">Connect Your Spotify</h1>
+          <p className="text-white/80 text-center mb-8">
+            Get personalized event recommendations in your city based on your music taste
           </p>
           
           {/* Benefits of connecting */}
-          <div className="space-y-4 mb-8">
+          <div className="space-y-6 mb-10">
             <div className="flex items-start">
-              <div className="mt-1 mr-4 bg-green-100 p-2 rounded-full">
-                <Music className="h-5 w-5 text-green-600" />
+              <div className="mt-1 mr-4 bg-white/10 p-2 rounded-full">
+                <Music className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-neutral-800">Personalized Music Insights</h3>
-                <p className="text-sm text-neutral-600">
+                <h3 className="font-medium text-[var(--app-primary)]">Personalized Music Insights</h3>
+                <p className="text-sm text-white/80">
                   Discover your unique music personality and listening habits
                 </p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="mt-1 mr-4 bg-blue-100 p-2 rounded-full">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="mt-1 mr-4 bg-white/10 p-2 rounded-full">
+                <Calendar className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-neutral-800">Tailored Event Recommendations</h3>
-                <p className="text-sm text-neutral-600">
-                  Find concerts and events matching your favorite genres and artists
+                <h3 className="font-medium text-[var(--app-primary)]">Tailored Event Recommendations</h3>
+                <p className="text-sm text-white/80">
+                  Find concerts and events in your city matching your favorite genres and artists
                 </p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="mt-1 mr-4 bg-purple-100 p-2 rounded-full">
-                <Headphones className="h-5 w-5 text-purple-600" />
+              <div className="mt-1 mr-4 bg-white/10 p-2 rounded-full">
+                <Headphones className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-neutral-800">Custom Playlists for Events</h3>
-                <p className="text-sm text-neutral-600">
-                  Get exclusive playlists tailored to local music events
+                <h3 className="font-medium text-[var(--app-primary)]">Custom Playlists for Events</h3>
+                <p className="text-sm text-white/80">
+                  Get exclusive playlists tailored to local music events in your city
                 </p>
               </div>
             </div>
@@ -104,20 +104,20 @@ const ConnectSpotify: React.FC = () => {
           <button 
             onClick={handleConnectSpotify} 
             disabled={isConnecting}
-            className="btn-spotify"
+            className="btn-primary"
           >
             {isConnecting ? 'Connecting...' : 'Connect with Spotify'}
           </button>
           
           {/* Skip option */}
-          <div className="text-center">
+          <div className="text-center mt-4">
             <button 
               onClick={handleSkip}
-              className="text-neutral-500 text-sm font-medium"
+              className="text-white/70 text-sm font-medium"
             >
               Skip for now
             </button>
-            <p className="text-xs text-neutral-400 mt-1">
+            <p className="text-xs text-white/50 mt-1">
               You can always connect later
             </p>
           </div>

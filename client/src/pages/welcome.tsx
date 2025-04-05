@@ -58,10 +58,15 @@ const WelcomePage: React.FC = () => {
         {/* Quincy Logo */}
         <h1 className="text-[var(--app-primary)] text-7xl font-bold mb-4 text-center">Quincy</h1>
         
-        <p className="text-[var(--app-primary)] text-xl text-center mb-12">
+        <p className="text-white text-xl text-center mb-8">
           From playlists to places —<br/>
           your streaming data<br/>
           becomes your city map.
+        </p>
+
+        <p className="text-white text-sm text-center mb-8 opacity-80">
+          Get personalized event recommendations in your city<br/>
+          based on your unique music taste.
         </p>
         
         {/* Phone verification form */}
@@ -108,7 +113,7 @@ const WelcomePage: React.FC = () => {
           >
             {locationShared && <Check size={16} className="text-white" />}
           </div>
-          <p className="text-[var(--app-primary)]">
+          <p className="text-white">
             Share My Location
           </p>
         </div>
