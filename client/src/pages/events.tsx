@@ -1,5 +1,6 @@
-import { FC, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { FC, useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { 
   Card, 
   CardContent, 
@@ -13,6 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import { formatDistance, format } from "date-fns";
 import { Event } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -200,6 +206,7 @@ const EventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
             size="sm"
             className="gap-1 bg-gradient-primary hover:opacity-90 text-white"
             title="Generate a Spotify playlist for this event"
+            onClick={() => handleGeneratePlaylist(event)}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18V5l12-2v13" />
@@ -263,8 +270,21 @@ const EventsLoading = () => (
   </div>
 );
 
+// This function will be implemented by the EventsPage component
+let handleGeneratePlaylist = (event: EventWithRelevance) => {
+  console.log("Default playlist generator called", event);
+  // This is a placeholder that will be replaced by the actual implementation
+};
+
 const EventsPage: FC = () => {
   const [activeTab, setActiveTab] = useState("personalized");
+  const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventWithRelevance | null>(null);
+  const [selectedMood, setSelectedMood] = useState("");
+  const [playlistName, setPlaylistName] = useState("");
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const [createdPlaylistUrl, setCreatedPlaylistUrl] = useState("");
+  const { toast } = useToast();
   
   // Mock user ID - in a real app, this would come from auth context
   const userId = 1; // This would come from authentication context
@@ -398,8 +418,192 @@ const EventsPage: FC = () => {
     return moodEventsData?.events?.length ? moodEventsData.events : dummyEvents;
   };
   
+  // Generate playlist mutation
+  const generatePlaylistMutation = useMutation({
+    mutationFn: async (data: { eventId: number; mood?: string; playlistName?: string }) => {
+      const response = await fetch('/api/playlists/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create playlist');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setCreatedPlaylistUrl(data.spotifyUrl);
+      setIsCreatingPlaylist(false);
+      toast({
+        title: "Playlist created!",
+        description: "Your Spotify playlist has been generated successfully.",
+      });
+      // Close dialog after a short delay to show success state
+      setTimeout(() => {
+        setPlaylistDialogOpen(false);
+        // Reset states
+        setTimeout(() => {
+          setSelectedEvent(null);
+          setSelectedMood("");
+          setPlaylistName("");
+          setCreatedPlaylistUrl("");
+        }, 300);
+      }, 1500);
+    },
+    onError: (error) => {
+      setIsCreatingPlaylist(false);
+      toast({
+        title: "Playlist creation failed",
+        description: error.message || "An error occurred while creating your playlist. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Local implementation of handleGeneratePlaylist
+  const handleGeneratePlaylistLocal = (event: EventWithRelevance) => {
+    setSelectedEvent(event);
+    // Default playlist name based on event
+    setPlaylistName(`${event.name} - ${event.genre || 'Mix'}`);
+    // Open the dialog
+    setPlaylistDialogOpen(true);
+  };
+
+  // Use effect to set the global handleGeneratePlaylist function
+  useEffect(() => {
+    // Override the global implementation
+    handleGeneratePlaylist = handleGeneratePlaylistLocal;
+    
+    // Cleanup function to reset handleGeneratePlaylist when component unmounts
+    return () => {
+      handleGeneratePlaylist = (event) => {
+        console.log("Default playlist generator called", event);
+      };
+    };
+  }, []);
+
+  const handleCreatePlaylist = () => {
+    if (!selectedEvent) return;
+    
+    setIsCreatingPlaylist(true);
+    generatePlaylistMutation.mutate({
+      eventId: selectedEvent.id,
+      mood: selectedMood || undefined,
+      playlistName: playlistName || undefined,
+    });
+  };
+
   return (
     <div className="p-6 pt-4 lg:ml-64">
+      {/* Playlist generation dialog */}
+      <Dialog open={playlistDialogOpen} onOpenChange={setPlaylistDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generate Spotify Playlist</DialogTitle>
+            <DialogDescription>
+              Create a personalized playlist for this event based on your music taste.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {createdPlaylistUrl ? (
+            <div className="space-y-4 py-4 text-center">
+              <div className="mb-4">
+                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold">Playlist created successfully!</h3>
+              <p className="text-sm text-muted-foreground">Your personalized playlist is now available on Spotify</p>
+              
+              <div className="mt-4">
+                <Button 
+                  className="w-full bg-[#1DB954] hover:bg-[#1DB954]/90"
+                  onClick={() => window.open(createdPlaylistUrl, '_blank')}
+                >
+                  Open in Spotify
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="playlist-name">Playlist Name</Label>
+                  <Input
+                    id="playlist-name"
+                    value={playlistName}
+                    onChange={(e) => setPlaylistName(e.target.value)}
+                    placeholder="Enter a name for your playlist"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="mood">Playlist Mood</Label>
+                  <Select 
+                    value={selectedMood} 
+                    onValueChange={setSelectedMood}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a mood for your playlist" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Auto (based on the event)</SelectItem>
+                      <SelectItem value="energetic">Energetic</SelectItem>
+                      <SelectItem value="relaxed">Relaxed</SelectItem>
+                      <SelectItem value="upbeat">Upbeat</SelectItem>
+                      <SelectItem value="melancholic">Melancholic</SelectItem>
+                      <SelectItem value="party">Party</SelectItem>
+                      <SelectItem value="focused">Focused</SelectItem>
+                      <SelectItem value="romantic">Romantic</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Selecting a mood will adjust the energy and vibe of your playlist
+                  </p>
+                </div>
+              </div>
+              
+              <DialogFooter className="sm:justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPlaylistDialogOpen(false)}
+                  disabled={isCreatingPlaylist}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleCreatePlaylist}
+                  disabled={isCreatingPlaylist}
+                  className="bg-gradient-primary hover:opacity-90 text-white"
+                >
+                  {isCreatingPlaylist ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Playlist"
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      
       {/* Page header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gradient">

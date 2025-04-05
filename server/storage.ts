@@ -3,6 +3,8 @@ import {
   type MusicSummary, type Event, type VerificationCode, type Playlist,
   musicSummaries, events, verificationCodes, playlists
 } from "@shared/schema";
+import { db } from "./db";
+import { and, asc, desc, eq, gte, like, lt, lte, or, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -352,4 +354,296 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getUserBySpotifyId(spotifyId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.spotifyId, spotifyId));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser || undefined;
+  }
+
+  async getMusicSummary(userId: number): Promise<MusicSummary | undefined> {
+    const [summary] = await db
+      .select()
+      .from(musicSummaries)
+      .where(eq(musicSummaries.userId, userId));
+    return summary || undefined;
+  }
+
+  async createMusicSummary(summaryData: Omit<MusicSummary, 'id'>): Promise<MusicSummary> {
+    const [summary] = await db
+      .insert(musicSummaries)
+      .values(summaryData)
+      .returning();
+    return summary;
+  }
+
+  async updateMusicSummary(id: number, data: Partial<MusicSummary>): Promise<MusicSummary | undefined> {
+    const [updatedSummary] = await db
+      .update(musicSummaries)
+      .set(data)
+      .where(eq(musicSummaries.id, id))
+      .returning();
+    return updatedSummary || undefined;
+  }
+
+  async updateUserLocation(userId: number, latitude: number, longitude: number): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ latitude, longitude })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser || undefined;
+  }
+
+  async updateUserNotifications(userId: number, enabled: boolean): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ notificationsEnabled: enabled })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser || undefined;
+  }
+
+  async saveVerificationCode(userId: number, code: string, expiresAt: Date): Promise<VerificationCode> {
+    const [verificationCode] = await db
+      .insert(verificationCodes)
+      .values({
+        userId,
+        code,
+        expiresAt,
+        verified: false,
+        createdAt: new Date()
+      })
+      .returning();
+    return verificationCode;
+  }
+
+  async getVerificationCode(userId: number, code: string): Promise<VerificationCode | undefined> {
+    const [verificationCode] = await db
+      .select()
+      .from(verificationCodes)
+      .where(and(
+        eq(verificationCodes.userId, userId),
+        eq(verificationCodes.code, code),
+        lt(new Date(), verificationCodes.expiresAt)
+      ));
+    return verificationCode || undefined;
+  }
+
+  async markVerificationCodeAsVerified(id: number): Promise<VerificationCode | undefined> {
+    const [verificationCode] = await db
+      .update(verificationCodes)
+      .set({ verified: true })
+      .where(eq(verificationCodes.id, id))
+      .returning();
+    return verificationCode || undefined;
+  }
+
+  async markUserEmailAsVerified(userId: number): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ emailVerified: true })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async markUserPhoneAsVerified(userId: number): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ phoneVerified: true })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async getEvents(latitude: number, longitude: number, radius: number): Promise<Event[]> {
+    // For a proper geo-search, we'd need PostGIS/spatial index
+    // This is a simple approximation using the Pythagorean theorem 
+    // (works for smaller distances, not accurate over large distances)
+    return db
+      .select()
+      .from(events)
+      .where(
+        and(
+          gte(events.date, new Date()),
+          lte(
+            sql`POWER(${events.latitude} - ${latitude}, 2) + POWER(${events.longitude} - ${longitude}, 2)`,
+            sql`POWER(${radius} / 111, 2)` // rough conversion from km to degrees (1 degree ≈ 111 km)
+          )
+        )
+      )
+      .orderBy(asc(events.date));
+  }
+
+  async getAllEvents(): Promise<Event[]> {
+    return db.select().from(events);
+  }
+
+  async getEventById(id: number): Promise<Event | undefined> {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, id));
+    return event || undefined;
+  }
+
+  async getEventByExternalId(externalId: string): Promise<Event | undefined> {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.externalId, externalId));
+    return event || undefined;
+  }
+
+  async createEvent(eventData: Omit<Event, 'id'>): Promise<Event> {
+    const [event] = await db
+      .insert(events)
+      .values(eventData)
+      .returning();
+    return event;
+  }
+
+  async updateEvent(id: number, eventData: Partial<Event>): Promise<Event | undefined> {
+    const [event] = await db
+      .update(events)
+      .set(eventData)
+      .where(eq(events.id, id))
+      .returning();
+    return event || undefined;
+  }
+
+  async deleteEvent(id: number): Promise<boolean> {
+    const result = await db
+      .delete(events)
+      .where(eq(events.id, id));
+    return result.count > 0;
+  }
+
+  async searchEvents(query: string, limit: number = 50): Promise<Event[]> {
+    const searchTerm = `%${query.toLowerCase()}%`;
+    return db
+      .select()
+      .from(events)
+      .where(
+        or(
+          like(events.name, searchTerm),
+          like(events.description, searchTerm),
+          like(events.venue, searchTerm),
+          like(events.genre, searchTerm)
+        )
+      )
+      .limit(limit);
+  }
+
+  async getEventsByGenre(genre: string): Promise<Event[]> {
+    return db
+      .select()
+      .from(events)
+      .where(like(events.genre, `%${genre.toLowerCase()}%`))
+      .orderBy(asc(events.date));
+  }
+
+  async getUpcomingEvents(days: number = 30): Promise<Event[]> {
+    const now = new Date();
+    const futureDate = new Date();
+    futureDate.setDate(now.getDate() + days);
+    
+    return db
+      .select()
+      .from(events)
+      .where(
+        and(
+          gte(events.date, now),
+          lte(events.date, futureDate)
+        )
+      )
+      .orderBy(asc(events.date));
+  }
+
+  async getPlaylistById(id: number): Promise<Playlist | undefined> {
+    const [playlist] = await db
+      .select()
+      .from(playlists)
+      .where(eq(playlists.id, id));
+    return playlist || undefined;
+  }
+
+  async getPlaylistsByUserId(userId: number): Promise<Playlist[]> {
+    return db
+      .select()
+      .from(playlists)
+      .where(eq(playlists.userId, userId))
+      .orderBy(desc(playlists.createdAt));
+  }
+
+  async getPlaylistsByEventId(eventId: number): Promise<Playlist[]> {
+    return db
+      .select()
+      .from(playlists)
+      .where(eq(playlists.eventId, eventId))
+      .orderBy(desc(playlists.createdAt));
+  }
+
+  async createPlaylist(playlistData: Omit<Playlist, 'id'>): Promise<Playlist> {
+    const [playlist] = await db
+      .insert(playlists)
+      .values({
+        ...playlistData,
+        createdAt: new Date()
+      })
+      .returning();
+    return playlist;
+  }
+
+  async updatePlaylist(id: number, playlistData: Partial<Playlist>): Promise<Playlist | undefined> {
+    const [playlist] = await db
+      .update(playlists)
+      .set(playlistData)
+      .where(eq(playlists.id, id))
+      .returning();
+    return playlist || undefined;
+  }
+
+  async deletePlaylist(id: number): Promise<boolean> {
+    const result = await db
+      .delete(playlists)
+      .where(eq(playlists.id, id));
+    return result.count > 0;
+  }
+}
+
+// Switch from MemStorage to DatabaseStorage
+export const storage = new DatabaseStorage();

@@ -1,8 +1,15 @@
-import { FC, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { FC, useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Event } from "@shared/schema";
 import MobileLayout from "@/components/MobileLayout";
 import { Link } from "wouter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 // Genre-based image URLs (shared with events.tsx)
 const GENRE_IMAGES = {
@@ -68,6 +75,12 @@ const getEventImage = (event: EventWithRelevance): string => {
   return GENRE_IMAGES.default;
 };
 
+// Function that will be overridden by the page component
+let handleGeneratePlaylist = (event: EventWithRelevance) => {
+  console.log("Default playlist generator called", event);
+  // This is a placeholder that will be replaced by the actual implementation
+};
+
 // Simple event card component based on the mockup
 const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
   // Generate price display or free entry text
@@ -113,12 +126,26 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
 
   return (
     <div className="mb-4">
-      <div className="bg-gray-100 rounded-md aspect-square flex items-center justify-center overflow-hidden">
+      <div className="bg-gray-100 rounded-md aspect-square flex items-center justify-center overflow-hidden relative">
         <img 
           src={eventImage} 
           alt={event.name} 
           className="w-full h-full object-cover"
         />
+        {/* Playlist button overlay */}
+        <div className="absolute bottom-2 right-2">
+          <button 
+            onClick={() => handleGeneratePlaylist(event)}
+            className="bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-800 p-2 rounded-full shadow-md"
+            title="Generate a playlist for this event"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18V5l12-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="18" cy="16" r="3" />
+            </svg>
+          </button>
+        </div>
       </div>
       <h3 className="font-bold mt-2 text-gray-800">{event.name}</h3>
       <p className="text-sm text-gray-600 mt-1">
@@ -130,10 +157,101 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
 };
 
 const MobileEventsPage: FC = () => {
+  const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventWithRelevance | null>(null);
+  const [selectedMood, setSelectedMood] = useState("");
+  const [playlistName, setPlaylistName] = useState("");
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const [createdPlaylistUrl, setCreatedPlaylistUrl] = useState("");
+  const { toast } = useToast();
+  
+  // Mock user ID - in a real app, this would come from auth context
+  const userId = 1;
+  
   // Fetch personalized recommendations
   const { data: personalizedData, isLoading } = useQuery<{ count: number, events: EventWithRelevance[] }>({
     queryKey: ["/api/recommendations/personal"],
   });
+  
+  // Mutation for creating a playlist
+  const generatePlaylistMutation = useMutation({
+    mutationFn: async (data: { eventId: number; mood?: string; playlistName?: string }) => {
+      const response = await fetch('/api/playlists/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create playlist');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setCreatedPlaylistUrl(data.spotifyUrl);
+      setIsCreatingPlaylist(false);
+      toast({
+        title: "Playlist created!",
+        description: "Your Spotify playlist has been generated successfully.",
+      });
+      // Close dialog after a short delay to show success state
+      setTimeout(() => {
+        setPlaylistDialogOpen(false);
+        // Reset states
+        setTimeout(() => {
+          setSelectedEvent(null);
+          setSelectedMood("");
+          setPlaylistName("");
+          setCreatedPlaylistUrl("");
+        }, 500);
+      }, 3000);
+    },
+    onError: (error) => {
+      setIsCreatingPlaylist(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create playlist. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle generate playlist function (will be used by event cards)
+  const handleGeneratePlaylistLocal = (event: EventWithRelevance) => {
+    setSelectedEvent(event);
+    // Default playlist name based on event
+    setPlaylistName(`${event.name} - ${event.genre || 'Mix'}`);
+    // Open the dialog
+    setPlaylistDialogOpen(true);
+  };
+  
+  // Use effect to set the global handleGeneratePlaylist function
+  useEffect(() => {
+    // Override the global implementation
+    handleGeneratePlaylist = handleGeneratePlaylistLocal;
+    
+    // Cleanup function to reset handleGeneratePlaylist when component unmounts
+    return () => {
+      handleGeneratePlaylist = (event) => {
+        console.log("Default playlist generator called", event);
+      };
+    };
+  }, []);
+  
+  const handleCreatePlaylist = () => {
+    if (!selectedEvent) return;
+    
+    setIsCreatingPlaylist(true);
+    generatePlaylistMutation.mutate({
+      eventId: selectedEvent.id,
+      mood: selectedMood || undefined,
+      playlistName: playlistName || undefined,
+    });
+  };
   
   // Use either real data or dummy data for demonstration purposes
   const events = personalizedData?.events || [
@@ -248,6 +366,112 @@ const MobileEventsPage: FC = () => {
         <button className="w-full py-3 bg-gray-800 text-white rounded-md font-medium my-4">
           Turn On Notifications
         </button>
+        
+        {/* Playlist generation dialog */}
+        <Dialog open={playlistDialogOpen} onOpenChange={setPlaylistDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Create Spotify Playlist</DialogTitle>
+              <DialogDescription>
+                Generate a playlist for this event based on your music taste.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {createdPlaylistUrl ? (
+              <div className="space-y-4 py-4 text-center">
+                <div className="mb-4">
+                  <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                      <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold">Playlist created!</h3>
+                <p className="text-sm text-muted-foreground">Your new playlist is now on Spotify</p>
+                
+                <div className="mt-4">
+                  <Button 
+                    className="w-full bg-[#1DB954] hover:bg-[#1DB954]/90"
+                    onClick={() => window.open(createdPlaylistUrl, '_blank')}
+                  >
+                    Open in Spotify
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="playlist-name">Playlist Name</Label>
+                    <Input
+                      id="playlist-name"
+                      value={playlistName}
+                      onChange={(e) => setPlaylistName(e.target.value)}
+                      placeholder="Enter a name for your playlist"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="mood">Playlist Mood</Label>
+                    <Select 
+                      value={selectedMood} 
+                      onValueChange={setSelectedMood}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a mood for your playlist" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Auto (based on the event)</SelectItem>
+                        <SelectItem value="energetic">Energetic</SelectItem>
+                        <SelectItem value="relaxed">Relaxed</SelectItem>
+                        <SelectItem value="upbeat">Upbeat</SelectItem>
+                        <SelectItem value="melancholic">Melancholic</SelectItem>
+                        <SelectItem value="party">Party</SelectItem>
+                        <SelectItem value="focused">Focused</SelectItem>
+                        <SelectItem value="romantic">Romantic</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setPlaylistDialogOpen(false)}
+                    disabled={isCreatingPlaylist}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    className="gap-1 bg-gradient-primary hover:opacity-90 text-white" 
+                    onClick={handleCreatePlaylist}
+                    disabled={isCreatingPlaylist}
+                  >
+                    {isCreatingPlaylist ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 18V5l12-2v13" />
+                          <circle cx="6" cy="18" r="3" />
+                          <circle cx="18" cy="16" r="3" />
+                        </svg>
+                        Create Playlist
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
         
         {/* Bottom navigation */}
         <div className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white py-3 px-8 flex justify-between">

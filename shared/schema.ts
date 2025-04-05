@@ -120,7 +120,7 @@ export const playlistSchema = createInsertSchema(playlists);
 
 export const createPlaylistSchema = z.object({
   eventId: z.number(),
-  mood: z.enum(['energetic', 'chill', 'happy', 'focused', 'party', 'romantic']).optional(),
+  mood: z.enum(['energetic', 'relaxed', 'upbeat', 'melancholic', 'party', 'focused', 'romantic']).optional(),
   playlistName: z.string().optional(),
 });
 

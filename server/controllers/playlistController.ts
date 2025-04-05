@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
 import { SpotifyApi } from '../utils/spotifyApi';
-import { createPlaylistSchema } from '../../shared/schema';
+import { createPlaylistSchema } from '@shared/schema';
 import { emailService } from '../utils/emailService';
-import { z } from 'zod';
+import { MoodCategory } from './moodController';
 
 // Extended Express Request with user
 interface AuthenticatedRequest extends Request {
@@ -14,7 +14,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Generate a playlist based on event mood
+ * Generate a playlist based on event details and mood
  * @route POST /api/playlists/generate
  */
 export const generatePlaylist = async (req: AuthenticatedRequest, res: Response) => {
@@ -51,39 +51,124 @@ export const generatePlaylist = async (req: AuthenticatedRequest, res: Response)
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    // Extract key information from the event
-    const eventGenre = event.genre || 'pop'; // Default to pop if no genre is specified
-    const eventName = playlistName || event.name;
-    
-    // Extract artist name from event name if possible
-    let eventArtist: string | undefined;
-    if (event.name.includes(' - ')) {
-      [eventArtist] = event.name.split(' - ');
-    }
-
     // Initialize Spotify API with user's access token
     const spotifyApi = new SpotifyApi(user.accessToken);
 
-    // Generate playlist
-    const { playlist, tracks } = await spotifyApi.generateEventPlaylist(
-      eventGenre,
-      eventName,
-      eventArtist,
-      mood,
-      25 // Default to 25 tracks
+    // Get user's music summary for personalization
+    const musicSummary = await storage.getMusicSummary(userId);
+    
+    // Set up parameters for the Spotify recommendations API
+    const recommendationParams: any = {
+      limit: 25, // Get 25 tracks for the playlist
+      seed_genres: [],
+      target_energy: 0.5,
+      target_danceability: 0.5,
+      target_valence: 0.5,
+      min_popularity: 30 // Only include reasonably popular tracks
+    };
+
+    // Adjust audio features based on the mood
+    if (mood) {
+      switch (mood) {
+        case MoodCategory.ENERGETIC:
+          recommendationParams.target_energy = 0.8;
+          recommendationParams.target_danceability = 0.7;
+          recommendationParams.target_valence = 0.7;
+          break;
+        case MoodCategory.RELAXED:
+          recommendationParams.target_energy = 0.3;
+          recommendationParams.target_danceability = 0.4;
+          recommendationParams.target_valence = 0.5;
+          break;
+        case MoodCategory.UPBEAT:
+          recommendationParams.target_energy = 0.6;
+          recommendationParams.target_danceability = 0.7;
+          recommendationParams.target_valence = 0.8;
+          break;
+        case MoodCategory.MELANCHOLIC:
+          recommendationParams.target_energy = 0.4;
+          recommendationParams.target_danceability = 0.3;
+          recommendationParams.target_valence = 0.2;
+          break;
+        case MoodCategory.PARTY:
+          recommendationParams.target_energy = 0.9;
+          recommendationParams.target_danceability = 0.9;
+          recommendationParams.target_valence = 0.7;
+          break;
+        case MoodCategory.FOCUSED:
+          recommendationParams.target_energy = 0.5;
+          recommendationParams.target_danceability = 0.3;
+          recommendationParams.target_valence = 0.5;
+          break;
+        case MoodCategory.ROMANTIC:
+          recommendationParams.target_energy = 0.4;
+          recommendationParams.target_danceability = 0.5;
+          recommendationParams.target_valence = 0.6;
+          break;
+      }
+    }
+
+    // Add genre seeds based on event genre and user's top genres
+    if (event.genre) {
+      // Map event genre to Spotify genre seed format
+      const genreSeed = event.genre.toLowerCase().replace(/\s+/g, '-');
+      recommendationParams.seed_genres.push(genreSeed);
+    }
+
+    // Add user's top genres if available
+    if (musicSummary && musicSummary.topGenres) {
+      const userGenres = typeof musicSummary.topGenres === 'string'
+        ? JSON.parse(musicSummary.topGenres).slice(0, 2) // Take top 2 user genres
+        : musicSummary.topGenres.slice(0, 2);
+      
+      recommendationParams.seed_genres.push(...userGenres);
+    }
+
+    // If we still don't have enough genre seeds, add some general popular genres
+    if (recommendationParams.seed_genres.length < 3) {
+      const backupGenres = ['pop', 'rock', 'indie', 'electronic', 'hip-hop'];
+      for (const genre of backupGenres) {
+        if (recommendationParams.seed_genres.length < 5) {
+          if (!recommendationParams.seed_genres.includes(genre)) {
+            recommendationParams.seed_genres.push(genre);
+          }
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Ensure we don't exceed 5 genre seeds (Spotify API limit)
+    recommendationParams.seed_genres = recommendationParams.seed_genres.slice(0, 5);
+
+    // Get track recommendations from Spotify
+    const recommendations = await spotifyApi.getRecommendations(recommendationParams);
+
+    // Create a new playlist on Spotify
+    const playlistTitle = playlistName || `${event.name} - ${mood || 'Mix'} Playlist`;
+    const description = `Created by Quincy for the "${event.name}" event at ${event.venue} on ${new Date(event.date).toLocaleDateString()}`;
+    
+    const playlist = await spotifyApi.createPlaylist(
+      playlistTitle, 
+      description,
+      true // Public playlist
     );
 
-    // Store playlist information in database
+    // Add the recommended tracks to the playlist
+    const trackUris = recommendations.tracks.map(track => track.uri);
+    await spotifyApi.addTracksToPlaylist(playlist.id, trackUris);
+
+    // Save the playlist details in our database
     const savedPlaylist = await storage.createPlaylist({
       userId,
-      eventId: event.id,
+      eventId,
       spotifyPlaylistId: playlist.id,
       name: playlist.name,
-      description: playlist.description,
-      imageUrl: playlist.images.length > 0 ? playlist.images[0].url : null,
-      tracks: JSON.stringify(tracks), // Convert tracks to JSON string to match schema
+      description: playlist.description || description,
+      imageUrl: playlist.images?.[0]?.url || null,
+      tracks: recommendations.tracks,
       mood: mood || null,
-      isPublic: playlist.public,
+      isPublic: true,
       createdAt: new Date()
     });
 
@@ -196,7 +281,7 @@ export const getPlaylist = async (req: AuthenticatedRequest, res: Response) => {
 
 /**
  * Get playlists for a specific event
- * @route GET /api/events/:eventId/playlists
+ * @route GET /api/playlists/event/:eventId
  */
 export const getEventPlaylists = async (req: AuthenticatedRequest, res: Response) => {
   try {
