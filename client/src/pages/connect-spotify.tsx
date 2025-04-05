@@ -69,9 +69,7 @@ const ConnectSpotify: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-medium text-[var(--app-primary)]">Local Music Insights You Can't Get Anywhere Else</h3>
-                <p className="text-sm text-white/80">
-                  Discover hidden connections and 1-of-1 facts between your listening habits and your city's music scene
-                </p>
+                <p className="text-sm text-white/80">Discover hidden connections and 1-of-1 facts between your listening habits and your city's music scene</p>
               </div>
             </div>
             
@@ -81,9 +79,7 @@ const ConnectSpotify: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-medium text-[var(--app-primary)]">Tailored Event Recommendations</h3>
-                <p className="text-sm text-white/80">
-                  Find concerts and events in your city matching your favorite genres and artists
-                </p>
+                <p className="text-sm text-white/80">Find concerts and events in your city matching your favorite genres and artists</p>
               </div>
             </div>
             
@@ -93,9 +89,7 @@ const ConnectSpotify: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-medium text-[var(--app-primary)]">Custom Playlists for Events</h3>
-                <p className="text-sm text-white/80">
-                  Get exclusive playlists tailored to local music events in your city
-                </p>
+                <p className="text-sm text-white/80">Get exclusive playlists tailored to local music events in your city</p>
               </div>
             </div>
           </div>
