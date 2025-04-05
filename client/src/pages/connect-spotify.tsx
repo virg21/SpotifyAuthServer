@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import MobileLayout from '@/components/MobileLayout';
-import { Music, Headphones, Calendar } from 'lucide-react';
+import { Music, Users, Calendar } from 'lucide-react';
 
 const ConnectSpotify: React.FC = () => {
   const [, setLocation] = useLocation();
@@ -85,11 +85,11 @@ const ConnectSpotify: React.FC = () => {
             
             <div className="flex items-start p-4 rounded-xl border border-[var(--app-primary)] bg-white/5">
               <div className="mt-1 mr-4 bg-white/10 p-2 rounded-full">
-                <Headphones className="h-5 w-5 text-[var(--app-primary)]" />
+                <Users className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Custom Playlists for Events</h3>
-                <p className="text-sm text-white/80">Get exclusive playlists tailored to local music events in your city</p>
+                <h3 className="font-medium text-white">Make New Friends Based Off of Shared Music Taste</h3>
+                <p className="text-sm text-white/80">Meet people in your city who love the same artists and genres you do</p>
               </div>
             </div>
           </div>
