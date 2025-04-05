@@ -69,7 +69,7 @@ const ConnectSpotify: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-medium text-white">Your Music Taste, but Localized</h3>
-                <p className="text-sm text-white/80">Get crazy-specific facts about your music and your city — like how your fave artist had their first gig around the corner.</p>
+                <p className="text-sm text-white/80">Get wild, 1-of-1 facts about how your faves connect to your city. It's giving "how did they know that?"</p>
               </div>
             </div>
             
@@ -88,7 +88,7 @@ const ConnectSpotify: React.FC = () => {
                 <Users className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Meet People Who Get Your Taste</h3>
+                <h3 className="font-medium text-white">Meet People Who Get Your Music</h3>
                 <p className="text-sm text-white/80">Link up with locals who stan the same artists. Music soulmates? Maybe.</p>
               </div>
             </div>
