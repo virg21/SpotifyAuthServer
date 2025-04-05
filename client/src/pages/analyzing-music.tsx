@@ -108,7 +108,7 @@ const AnalyzingMusicPage: React.FC = () => {
     <MobileLayout 
       showNav={true} 
       back={false} 
-      title="ShiipMusic" 
+      title="Quincy" 
       showStatusBar={true}
       time={getCurrentTime()}
       activeTab="home"

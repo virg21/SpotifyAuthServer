@@ -34,7 +34,7 @@ const ConnectSpotify: React.FC = () => {
     <MobileLayout 
       showNav={false} 
       back={true} 
-      title="ShiipMusic" 
+      title="Quincy" 
       showStatusBar={true}
       time={getCurrentTime()}
     >

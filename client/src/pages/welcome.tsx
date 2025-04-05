@@ -49,7 +49,7 @@ const WelcomePage: React.FC = () => {
     <MobileLayout 
       showNav={false} 
       back={false} 
-      title="ShiipMusic" 
+      title="Quincy" 
       showStatusBar={true}
       time={getCurrentTime()}
     >
@@ -59,7 +59,7 @@ const WelcomePage: React.FC = () => {
           <span className="text-white text-3xl">🎵</span>
         </div>
         
-        <h1 className="text-3xl font-bold mb-2 text-center">Welcome to ShiipMusic</h1>
+        <h1 className="text-3xl font-bold mb-2 text-center">Welcome to Quincy</h1>
         <p className="text-neutral-600 text-center mb-8">
           Discover local music events based on your taste
         </p>

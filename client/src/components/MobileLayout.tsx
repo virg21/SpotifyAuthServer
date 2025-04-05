@@ -25,7 +25,7 @@ interface AppHeaderProps {
   onBack?: () => void;
 }
 
-export const AppHeader: FC<AppHeaderProps> = ({ title = 'ShiipMusic', back = false, onBack }) => {
+export const AppHeader: FC<AppHeaderProps> = ({ title = 'Quincy', back = false, onBack }) => {
   return (
     <header className="app-header">
       {back && (

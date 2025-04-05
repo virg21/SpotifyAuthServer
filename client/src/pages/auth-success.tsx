@@ -73,7 +73,7 @@ const AuthSuccessPage = () => {
     <MobileLayout 
       showNav={false} 
       back={false} 
-      title="ShiipMusic" 
+      title="Quincy" 
       showStatusBar={true}
       time={getCurrentTime()}
     >
