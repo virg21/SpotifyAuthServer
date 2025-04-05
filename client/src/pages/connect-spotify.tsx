@@ -68,9 +68,9 @@ const ConnectSpotify: React.FC = () => {
                 <Music className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-[var(--app-primary)]">Personalized Music Insights</h3>
+                <h3 className="font-medium text-[var(--app-primary)]">Local Music Insights You Can't Get Anywhere Else</h3>
                 <p className="text-sm text-white/80">
-                  Discover your unique music personality and listening habits
+                  Discover hidden connections and 1-of-1 facts between your listening habits and your city's music scene
                 </p>
               </div>
             </div>
