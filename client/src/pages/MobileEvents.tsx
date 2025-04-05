@@ -169,6 +169,29 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
           </span>
         </div>
         
+        {/* Vibe match indicator - only if relevance score exists */}
+        {event.relevanceScore !== undefined && (
+          <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm px-2 py-1 rounded text-white flex items-center gap-1">
+            <span className="text-xs font-medium">Vibe Match:</span>
+            <div className="flex">
+              {/* Convert relevance score to stars (out of 5) */}
+              {Array.from({ length: 5 }).map((_, i) => {
+                // Calculate which stars should be filled based on relevance score
+                // 0.92 = 4.6 stars, 0.85 = 4.25 stars, etc.
+                const starScore = Math.round((event.relevanceScore || 0) * 5 * 2) / 2; // round to nearest 0.5
+                const isFilled = i < Math.floor(starScore);
+                const isHalf = !isFilled && i < Math.ceil(starScore) && starScore % 1 !== 0;
+                
+                return (
+                  <span key={i} className={`text-xs ${isFilled || isHalf ? 'text-yellow-400' : 'text-gray-400'}`}>
+                    {isFilled ? '★' : isHalf ? '★' : '☆'}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
         {/* Action buttons overlay */}
         <div className="absolute bottom-2 right-2 flex space-x-2">
           {/* Share button */}
