@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import MobileLayout from '@/components/MobileLayout';
-import { PhoneIcon, MapPin } from 'lucide-react';
+import { PhoneIcon, MapPin, Check } from 'lucide-react';
 
 const WelcomePage: React.FC = () => {
   const [, setLocation] = useLocation();
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [locationShared, setLocationShared] = useState(false);
   
@@ -17,11 +18,11 @@ const WelcomePage: React.FC = () => {
     return `${hours}:${minutes}`;
   };
   
-  const handleVerifyPhone = (e: React.FormEvent) => {
+  const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // In a real app, this would call an API to send a verification code
+    // In a real app, this would call an API to verify the code
     setTimeout(() => {
       setIsLoading(false);
       // Navigate to the Spotify connect page
@@ -54,40 +55,39 @@ const WelcomePage: React.FC = () => {
       time={getCurrentTime()}
     >
       <div className="flex flex-col items-center justify-start pt-6 pb-12">
-        {/* Logo or app icon */}
-        <div className="w-24 h-24 bg-gradient-primary rounded-xl mb-8 flex items-center justify-center">
-          <span className="text-white text-3xl">🎵</span>
-        </div>
+        {/* Quincy Logo */}
+        <h1 className="text-[var(--app-primary)] text-7xl font-bold mb-4 text-center">Quincy</h1>
         
-        <h1 className="text-3xl font-bold mb-2 text-center">Welcome to Quincy</h1>
-        <p className="text-neutral-600 text-center mb-8">
-          Discover local music events based on your taste
+        <p className="text-[var(--app-primary)] text-xl text-center mb-12">
+          From playlists to places —<br/>
+          your streaming data<br/>
+          becomes your city map.
         </p>
         
         {/* Phone verification form */}
-        <div className="w-full mb-8">
-          <form onSubmit={handleVerifyPhone}>
+        <div className="w-full mb-6">
+          <form onSubmit={handleSignIn}>
             <div className="mb-4">
-              <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 mb-1">
-                Enter your phone number to continue
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <PhoneIcon className="h-5 w-5 text-neutral-500" />
-                </div>
-                <input
-                  type="tel"
-                  id="phone"
-                  placeholder="+1 (555) 123-4567"
-                  className="input-field pl-10"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
-                />
-              </div>
-              <p className="text-xs text-neutral-500 mt-1">
-                We'll send a verification code to this number
-              </p>
+              <input
+                type="tel"
+                id="phone"
+                placeholder="Phone number"
+                className="input-field"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="mb-6">
+              <input
+                type="text"
+                id="verification"
+                placeholder="Verification code"
+                className="input-field"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+              />
             </div>
             
             <button 
@@ -95,36 +95,26 @@ const WelcomePage: React.FC = () => {
               className="btn-primary"
               disabled={isLoading || !phoneNumber}
             >
-              {isLoading ? 'Sending code...' : 'Get Verification Code'}
+              Sign In
             </button>
           </form>
         </div>
         
         {/* Location sharing option */}
-        <div className="w-full">
-          <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200">
-            <div className="flex items-start mb-3">
-              <MapPin className="h-5 w-5 text-neutral-700 mr-2 mt-0.5" />
-              <div>
-                <h3 className="font-medium text-neutral-800">Share your location</h3>
-                <p className="text-sm text-neutral-600">
-                  Find music events near you and get location-specific recommendations
-                </p>
-              </div>
-            </div>
-            
-            <button
-              onClick={handleShareLocation}
-              className="btn-secondary py-2 mt-2 mb-0"
-              disabled={locationShared}
-            >
-              {locationShared ? '✓ Location shared' : 'Share My Location'}
-            </button>
+        <div className="w-full mt-4 flex items-center">
+          <div 
+            onClick={handleShareLocation}
+            className={`w-6 h-6 rounded-md flex items-center justify-center mr-3 cursor-pointer ${locationShared ? 'bg-[var(--app-primary)]' : 'border border-[var(--app-primary)]'}`}
+          >
+            {locationShared && <Check size={16} className="text-white" />}
           </div>
+          <p className="text-[var(--app-primary)]">
+            Share My Location
+          </p>
         </div>
         
         {/* Terms and privacy note */}
-        <p className="text-xs text-neutral-500 mt-8 text-center">
+        <p className="text-xs text-white/70 mt-8 text-center">
           By continuing, you agree to our Terms of Service and Privacy Policy
         </p>
       </div>

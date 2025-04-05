@@ -12,21 +12,26 @@
   }
 
   body {
-    @apply font-sans antialiased bg-white text-neutral-900;
+    @apply font-sans antialiased text-white;
     font-family: 'Inter', sans-serif;
+    background-color: var(--app-dark);
   }
   
   :root {
-    /* App colors */
-    --app-primary: #1DB954; /* Spotify green */
-    --app-dark: #121212;
+    /* App colors - Quincy theme */
+    --app-primary: #F73E7C; /* Quincy hot pink */
+    --app-dark: #00442C; /* Quincy dark green */
     --app-light: #FFFFFF;
     --app-gray: #F5F5F5;
-    --app-accent: #FF6B6B;
+    --app-accent: #F73E7C;
     
     /* For gradient support */
     --primary-light: var(--app-primary);
-    --primary-dark: #0E9D40;
+    --primary-dark: #DB2462; /* Darker pink for gradients */
+    
+    /* Background colors */
+    --app-bg: var(--app-dark);
+    --app-text: var(--app-primary);
   }
   
   #root {
@@ -37,38 +42,47 @@
 /* App-specific styles */
 @layer components {
   .mobile-container {
-    @apply mx-auto max-w-md min-h-screen flex flex-col relative bg-white;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    @apply mx-auto max-w-md min-h-screen flex flex-col relative;
+    background-color: var(--app-dark);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
   }
   
   .app-header {
-    @apply w-full px-4 py-3 flex items-center justify-center border-b border-neutral-100 relative;
+    @apply w-full px-4 py-3 flex items-center justify-center relative;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   .app-logo {
     @apply text-xl font-bold;
+    color: var(--app-primary);
   }
   
   .app-content {
     @apply flex-1 overflow-auto p-6;
+    color: var(--app-light);
   }
   
   .status-bar {
-    @apply flex justify-between items-center px-4 py-2 text-sm text-neutral-800;
+    @apply flex justify-between items-center px-4 py-2 text-sm;
+    color: rgba(255, 255, 255, 0.8);
+    background-color: rgba(0, 0, 0, 0.2);
   }
   
   .nav-bottom {
-    @apply flex items-center justify-around py-3 border-t border-neutral-200 bg-white;
+    @apply flex items-center justify-around py-3;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     max-width: inherit;
     margin: 0 auto;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   .nav-item {
-    @apply flex items-center justify-center w-12 h-12 text-neutral-600;
+    @apply flex items-center justify-center w-12 h-12;
+    color: rgba(255, 255, 255, 0.6);
     border-radius: 50%;
   }
   
@@ -82,27 +96,88 @@
   }
   
   .input-field {
-    @apply w-full px-4 py-3 rounded-md border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[var(--app-primary)] focus:border-[var(--app-primary)] mb-4;
+    @apply w-full px-4 py-3 rounded-md mb-4;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  
+  .input-field:focus {
+    outline: none;
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 2px rgba(247, 62, 124, 0.2);
+  }
+  
+  .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.5);
   }
   
   .btn-primary {
-    @apply w-full py-3 px-6 bg-neutral-800 hover:bg-neutral-700 text-white font-medium rounded-md transition-colors duration-200 mb-4;
+    @apply w-full py-3 px-6 font-medium rounded-md transition-colors duration-200 mb-4;
+    background-color: var(--app-primary);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--primary-dark);
   }
   
   .btn-secondary {
-    @apply w-full py-3 px-6 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-800 font-medium rounded-md transition-colors duration-200 mb-4;
+    @apply w-full py-3 px-6 font-medium rounded-md transition-colors duration-200 mb-4;
+    background-color: transparent;
+    border: 1px solid var(--app-primary);
+    color: var(--app-primary);
+  }
+  
+  .btn-secondary:hover {
+    background-color: rgba(247, 62, 124, 0.1);
   }
   
   .btn-spotify {
-    @apply w-full py-3 px-6 bg-[#1DB954] hover:bg-[#1AA84A] text-white font-medium rounded-md transition-colors duration-200 mb-4;
+    @apply w-full py-3 px-6 font-medium rounded-md transition-colors duration-200 mb-4;
+    background-color: var(--app-primary);
+    color: white;
   }
   
   .event-card {
-    @apply border border-neutral-200 rounded-lg overflow-hidden mb-4;
+    @apply rounded-lg overflow-hidden mb-4;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  .event-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
   }
   
   .event-image {
     @apply w-full h-40 object-cover;
+  }
+  
+  .event-details {
+    @apply p-4;
+    color: white;
+  }
+  
+  .event-title {
+    @apply text-lg font-bold mb-1;
+    color: var(--app-primary);
+  }
+  
+  .event-venue {
+    @apply text-sm mb-2;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .event-date {
+    @apply text-xs;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .event-relevance {
+    @apply mt-2 flex items-center;
+    color: var(--app-primary);
   }
 }
 

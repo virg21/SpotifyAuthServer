@@ -31,7 +31,7 @@ export const AppHeader: FC<AppHeaderProps> = ({ title = 'Quincy', back = false, 
       {back && (
         <button 
           onClick={onBack} 
-          className="absolute left-4 text-neutral-800"
+          className="absolute left-4 text-[var(--app-primary)]"
           aria-label="Go back"
         >
           <ChevronLeft size={24} />
