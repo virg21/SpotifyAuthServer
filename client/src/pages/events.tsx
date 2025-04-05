@@ -30,6 +30,7 @@ interface MoodCategory {
   id: string;
   name: string;
   keywords: string;
+  isRecommended?: boolean;
 }
 
 const EventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
@@ -213,14 +214,27 @@ const EventsLoading = () => (
 const EventsPage: FC = () => {
   const [activeTab, setActiveTab] = useState("personalized");
   
-  // Fetch all available moods
-  const { data: moodsData, isLoading: moodsLoading } = useQuery<{ count: number, moods: MoodCategory[] }>({
+  // Mock user ID - in a real app, this would come from auth context
+  const userId = 1; // This would come from authentication context
+  
+  // Fetch all available moods, including personalized ones
+  const { data: moodsData, isLoading: moodsLoading } = useQuery<{ count: number, moods: MoodCategory[], recommendedMoods: string[] }>({
     queryKey: ["/api/recommendations/moods"],
+    queryFn: async ({ queryKey }) => {
+      const res = await fetch(`${queryKey[0]}?userId=${userId}`);
+      if (!res.ok) throw new Error('Failed to fetch moods');
+      return res.json();
+    }
   });
   
   // Fetch personalized recommendations
   const { data: personalizedData, isLoading: personalizedLoading } = useQuery<{ count: number, events: EventWithRelevance[] }>({
     queryKey: ["/api/recommendations/personal"],
+    queryFn: async ({ queryKey }) => {
+      const res = await fetch(`${queryKey[0]}?userId=${userId}`);
+      if (!res.ok) throw new Error('Failed to fetch personalized recommendations');
+      return res.json();
+    }
   });
   
   // Fetch events for the selected mood tab
@@ -382,9 +396,13 @@ const EventsPage: FC = () => {
                   <TabsTrigger 
                     key={mood.id} 
                     value={mood.id}
-                    className="mr-2 mb-2 data-[state=active]:bg-primary data-[state=active]:text-white"
-                    title={`Keywords: ${mood.keywords}`}
+                    className={cn(
+                      "mr-2 mb-2 data-[state=active]:bg-primary data-[state=active]:text-white",
+                      mood.isRecommended && "border-2 border-primary/30"
+                    )}
+                    title={`${mood.isRecommended ? '🎯 Recommended based on your music taste! ' : ''}Keywords: ${mood.keywords}`}
                   >
+                    {mood.isRecommended && <span className="mr-1">🎵</span>}
                     {mood.name}
                   </TabsTrigger>
                 ))

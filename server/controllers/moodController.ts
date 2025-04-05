@@ -113,17 +113,75 @@ export const getMoodBasedEvents = async (req: Request, res: Response) => {
  * Get all available moods
  * @route GET /api/recommendations/moods
  */
-export const getAvailableMoods = (_req: Request, res: Response) => {
+export const getAvailableMoods = async (req: Request, res: Response) => {
   try {
-    const moods = Object.values(MoodCategory).map(mood => ({
+    const userId = parseInt(req.query.userId as string);
+    let personalizedMoods: MoodCategory[] = [];
+    
+    // Get all moods with their display info
+    const allMoods = Object.values(MoodCategory).map(mood => ({
       id: mood,
       name: mood.charAt(0).toUpperCase() + mood.slice(1),
-      keywords: moodKeywords[mood as MoodCategory].join(', ')
+      keywords: moodKeywords[mood as MoodCategory].join(', '),
+      isRecommended: false
     }));
     
+    // If we have a userId, try to personalize the moods order
+    if (userId) {
+      try {
+        // Get user's music summary
+        const musicSummary = await storage.getMusicSummary(userId);
+        
+        if (musicSummary) {
+          // Extract genres from music summary
+          const topGenres = Array.isArray(musicSummary.topGenres) ? musicSummary.topGenres : [];
+          const recentGenres = Array.isArray(musicSummary.recentGenres) ? musicSummary.recentGenres : [];
+          
+          // Get just the genre names from the objects
+          const userGenreStrings = [
+            ...topGenres.map(g => g.genre?.toLowerCase() || ''),
+            ...recentGenres.map(g => g.genre?.toLowerCase() || '')
+          ].filter(genre => genre !== '');
+          
+          // Map user genres to moods 
+          Object.entries(moodToGenreMapping).forEach(([mood, genres]) => {
+            // Check if user genres overlap with this mood's genres
+            const hasMatchingGenres = genres.some(genre => 
+              userGenreStrings.some(userGenre => 
+                userGenre.includes(genre.toLowerCase()) || 
+                genre.toLowerCase().includes(userGenre)
+              )
+            );
+            
+            if (hasMatchingGenres && !personalizedMoods.includes(mood as MoodCategory)) {
+              personalizedMoods.push(mood as MoodCategory);
+            }
+          });
+          
+          // Mark the recommended moods in the allMoods array
+          allMoods.forEach(mood => {
+            if (personalizedMoods.includes(mood.id as MoodCategory)) {
+              mood.isRecommended = true;
+            }
+          });
+          
+          // Sort moods to put recommended ones first
+          allMoods.sort((a, b) => {
+            if (a.isRecommended && !b.isRecommended) return -1;
+            if (!a.isRecommended && b.isRecommended) return 1;
+            return 0;
+          });
+        }
+      } catch (error) {
+        console.error('Error personalizing moods:', error);
+        // Continue with all moods if personalization fails
+      }
+    }
+    
     return res.status(200).json({
-      count: moods.length,
-      moods
+      count: allMoods.length,
+      moods: allMoods,
+      recommendedMoods: personalizedMoods
     });
   } catch (error) {
     console.error('Error getting available moods:', error);
