@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import ShareStoryboard from "../components/ShareStoryboard";
 
 // Genre-based image URLs (shared with events.tsx)
 const GENRE_IMAGES = {
@@ -81,6 +82,12 @@ let handleGeneratePlaylist = (event: EventWithRelevance) => {
   // This is a placeholder that will be replaced by the actual implementation
 };
 
+// Function that will be overridden by the page component
+let handleShareEvent = (event: EventWithRelevance) => {
+  console.log("Default share handler called", event);
+  // This is a placeholder that will be replaced by the actual implementation
+};
+
 // Simple event card component based on the mockup
 const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
   // Generate price display or free entry text
@@ -132,10 +139,30 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
           alt={event.name} 
           className="w-full h-full object-cover"
         />
-        {/* Playlist button overlay */}
-        <div className="absolute bottom-2 right-2">
+        {/* Action buttons overlay */}
+        <div className="absolute bottom-2 right-2 flex space-x-2">
+          {/* Share button */}
           <button 
-            onClick={() => handleGeneratePlaylist(event)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleShareEvent(event);
+            }}
+            className="bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-800 p-2 rounded-full shadow-md"
+            title="Share this event"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+          </button>
+          
+          {/* Playlist button */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleGeneratePlaylist(event);
+            }}
             className="bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-800 p-2 rounded-full shadow-md"
             title="Generate a playlist for this event"
           >
@@ -158,6 +185,7 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
 
 const MobileEventsPage: FC = () => {
   const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
+  const [shareStoryboardOpen, setShareStoryboardOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithRelevance | null>(null);
   const [selectedMood, setSelectedMood] = useState("");
   const [playlistName, setPlaylistName] = useState("");
@@ -229,15 +257,26 @@ const MobileEventsPage: FC = () => {
     setPlaylistDialogOpen(true);
   };
   
-  // Use effect to set the global handleGeneratePlaylist function
+  // Handle share event function (will be used by event cards)
+  const handleShareEventLocal = (event: EventWithRelevance) => {
+    setSelectedEvent(event);
+    // Open the share storyboard
+    setShareStoryboardOpen(true);
+  };
+  
+  // Use effect to set the global handler functions
   useEffect(() => {
-    // Override the global implementation
+    // Override the global implementations
     handleGeneratePlaylist = handleGeneratePlaylistLocal;
+    handleShareEvent = handleShareEventLocal;
     
-    // Cleanup function to reset handleGeneratePlaylist when component unmounts
+    // Cleanup function to reset global handlers when component unmounts
     return () => {
       handleGeneratePlaylist = (event) => {
         console.log("Default playlist generator called", event);
+      };
+      handleShareEvent = (event) => {
+        console.log("Default share handler called", event);
       };
     };
   }, []);
@@ -380,6 +419,24 @@ const MobileEventsPage: FC = () => {
           Create Event Playlist
         </button>
         
+        {/* Share event button */}
+        <button 
+          className="w-full py-3 bg-gradient-to-r from-pink-600 to-pink-500 text-white rounded-md font-medium mb-3 flex items-center justify-center"
+          onClick={() => {
+            // Select the first event in the list for sharing
+            if (events.length > 0) {
+              handleShareEvent(events[0]);
+            }
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
+          Share This Event
+        </button>
+        
         {/* Turn on notifications button */}
         <button className="w-full py-3 bg-gray-800 text-white rounded-md font-medium mb-4">
           Turn On Notifications
@@ -506,6 +563,13 @@ const MobileEventsPage: FC = () => {
             <span className="text-xs mt-1">Explore</span>
           </Link>
         </div>
+        
+        {/* Share Storyboard Component */}
+        <ShareStoryboard 
+          event={selectedEvent}
+          isOpen={shareStoryboardOpen}
+          onClose={() => setShareStoryboardOpen(false)}
+        />
       </div>
     </MobileLayout>
   );
