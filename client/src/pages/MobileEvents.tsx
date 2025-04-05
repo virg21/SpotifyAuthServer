@@ -110,6 +110,25 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
     return "🎵"; // Default icon
   };
   
+  // Determine if the event is a concert or general event based on properties
+  const getEventType = (): 'concert' | 'event' => {
+    const genre = event.genre?.toLowerCase() || '';
+    const name = event.name.toLowerCase();
+    const description = event.description?.toLowerCase() || '';
+    
+    // Check for music-related keywords
+    const musicKeywords = ['music', 'concert', 'band', 'live', 'performance', 'show', 'tour', 'gig', 'festival', 'jazz', 'hip-hop', 'rap', 'rock', 'pop', 'dj'];
+    
+    for (const keyword of musicKeywords) {
+      if (genre.includes(keyword) || name.includes(keyword) || description.includes(keyword)) {
+        return 'concert';
+      }
+    }
+    
+    // Default to 'event' if no concert indicators are found
+    return 'event';
+  };
+  
   const getPersonalReason = () => {
     // If we have a specific personal reason, return that
     if (event.personalReason) {
@@ -130,6 +149,7 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
 
   // Get appropriate event image based on genre
   const eventImage = getEventImage(event);
+  const eventType = getEventType();
 
   return (
     <div className="mb-4">
@@ -139,6 +159,16 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
           alt={event.name} 
           className="w-full h-full object-cover"
         />
+        
+        {/* Event type badge */}
+        <div className="absolute top-2 left-2">
+          <span className={`text-xs font-bold px-2 py-1 rounded-md text-white ${
+            eventType === 'concert' ? 'bg-pink-600' : 'bg-purple-600'
+          }`}>
+            {eventType === 'concert' ? 'Concert' : 'Event'}
+          </span>
+        </div>
+        
         {/* Action buttons overlay */}
         <div className="absolute bottom-2 right-2 flex space-x-2">
           {/* Share button */}
@@ -378,10 +408,15 @@ const MobileEventsPage: FC = () => {
           Based on your listening behavior, Quincy made these moves just for you
         </p>
         
-        {/* Event grid - 2 columns */}
-        <div className="grid grid-cols-2 gap-4">
-          {events.map((event) => (
-            <SimpleEventCard key={event.id} event={event} />
+        {/* Event grid - 1 column, with 2 events per row */}
+        <div className="flex flex-col space-y-6">
+          {/* Group events in pairs */}
+          {Array.from({ length: Math.ceil(events.length / 2) }).map((_, index) => (
+            <div key={`row-${index}`} className="grid grid-cols-2 gap-4">
+              {events.slice(index * 2, index * 2 + 2).map((event) => (
+                <SimpleEventCard key={event.id} event={event} />
+              ))}
+            </div>
           ))}
         </div>
         
