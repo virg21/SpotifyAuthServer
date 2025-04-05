@@ -12,6 +12,7 @@ const WelcomePage: React.FC = () => {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [locationShared, setLocationShared] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [userId, setUserId] = useState(0);
   const { toast } = useToast();
   
   // Get current time for the status bar
@@ -37,7 +38,7 @@ const WelcomePage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/verify/phone/1', {
+      const response = await fetch('/api/verify/phone/0', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -49,6 +50,12 @@ const WelcomePage: React.FC = () => {
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to send verification code');
+      }
+      
+      // Store the userId returned from the API for use in verification
+      if (data.userId) {
+        setUserId(data.userId);
+        console.log('User ID set to:', data.userId);
       }
       
       toast({
@@ -81,10 +88,20 @@ const WelcomePage: React.FC = () => {
       return;
     }
     
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "Missing user ID. Please try sending the code again.",
+        variant: "destructive"
+      });
+      setCodeSent(false);
+      return;
+    }
+    
     setVerifyLoading(true);
     
     try {
-      const response = await fetch('/api/verify/code/1', {
+      const response = await fetch(`/api/verify/code/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

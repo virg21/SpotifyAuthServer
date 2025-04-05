@@ -111,7 +111,7 @@ export const verifyPhoneSchema = z.object({
 
 export const verifyCodeSchema = z.object({
   code: z.string(),
-  email: z.string().email(),
+  email: z.string().email().optional(),
 });
 
 export const musicSummarySchema = createInsertSchema(musicSummaries);

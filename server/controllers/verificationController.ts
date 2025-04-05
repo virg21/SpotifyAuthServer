@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { storage } from '../storage';
 import { verifyPhoneSchema, verifyCodeSchema } from '@shared/schema';
 import { twilioClient } from '../utils/twilioClient';
+import { z } from 'zod';
 
 /**
  * Send verification code to user's phone
@@ -9,14 +10,6 @@ import { twilioClient } from '../utils/twilioClient';
  */
 export const sendVerificationCode = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId || '1');
-    
-    // Get user to check if they exist
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
     // Validate request body
     const validation = verifyPhoneSchema.safeParse(req.body);
     if (!validation.success) {
@@ -36,15 +29,50 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       });
     }
     
+    let userId = parseInt(req.params.userId || '0');
+    let user;
+    
+    if (userId > 0) {
+      user = await storage.getUser(userId);
+    }
+    
+    // If no userId provided or user doesn't exist, create a temporary user
+    if (!user) {
+      // Generate a random username based on timestamp and random string
+      const randomStr = Math.random().toString(36).substring(2, 10);
+      const tempUsername = `temp_${Date.now()}_${randomStr}`;
+      
+      // Create a temporary user with a random password
+      // We'll update this later when they complete the full signup
+      const tempPassword = Math.random().toString(36).substring(2, 15);
+      
+      try {
+        user = await storage.createUser({
+          username: tempUsername,
+          password: tempPassword,
+          phoneNumber: phoneNumber,
+          phoneVerified: false,
+        });
+        
+        userId = user.id;
+        console.log(`Created temporary user with ID: ${userId}`);
+      } catch (err) {
+        console.error('Error creating temporary user:', err);
+        return res.status(500).json({ message: 'Error creating user account' });
+      }
+    } else {
+      // Update existing user's phone number
+      await storage.updateUser(userId, { phoneNumber });
+    }
+    
     // Send verification code via Twilio
     const twilioResponse = await twilioClient.sendVerificationCode(phoneNumber);
-    
-    // Update user's phone number in the database
-    await storage.updateUser(userId, { phoneNumber });
+    console.log('Twilio verification response:', twilioResponse);
     
     res.status(200).json({ 
       message: 'Verification code sent successfully',
-      phoneNumber
+      phoneNumber,
+      userId: user.id
     });
   } catch (error) {
     console.error('Error sending verification code:', error);
@@ -58,6 +86,20 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
  */
 export const verifyCode = async (req: Request, res: Response) => {
   try {
+    // Modify verifyCodeSchema to make email optional
+    const validation = z.object({
+      code: z.string()
+    }).safeParse(req.body);
+    
+    if (!validation.success) {
+      return res.status(400).json({ 
+        message: 'Invalid verification code',
+        errors: validation.error.errors
+      });
+    }
+    
+    const { code } = validation.data;
+    
     const userId = parseInt(req.params.userId || '1');
     
     // Get user to check if they exist and have a phone number
@@ -72,17 +114,6 @@ export const verifyCode = async (req: Request, res: Response) => {
         error: 'PHONE_NUMBER_MISSING'
       });
     }
-    
-    // Validate request body
-    const validation = verifyCodeSchema.safeParse(req.body);
-    if (!validation.success) {
-      return res.status(400).json({ 
-        message: 'Invalid verification code',
-        errors: validation.error.errors
-      });
-    }
-    
-    const { code } = validation.data;
     
     // Check if Twilio is configured
     if (!twilioClient.isConfigured()) {
@@ -105,6 +136,7 @@ export const verifyCode = async (req: Request, res: Response) => {
     
     // Verify code with Twilio
     const verificationCheck = await twilioClient.verifyCode(user.phoneNumber, code);
+    console.log('Twilio verification check:', verificationCheck);
     
     if (verificationCheck.status === 'approved') {
       // Update user's verified status
