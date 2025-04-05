@@ -68,8 +68,8 @@ const ConnectSpotify: React.FC = () => {
                 <Music className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Local Music Insights You Can't Get Anywhere Else</h3>
-                <p className="text-sm text-white/80">Discover hidden connections and 1-of-1 facts between your listening habits and your city's music scene</p>
+                <h3 className="font-medium text-white">Your Music Taste, but Localized</h3>
+                <p className="text-sm text-white/80">Get crazy-specific facts about your music and your city — like how your fave artist had their first gig around the corner.</p>
               </div>
             </div>
             
@@ -78,8 +78,8 @@ const ConnectSpotify: React.FC = () => {
                 <Calendar className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Tailored Event Recommendations</h3>
-                <p className="text-sm text-white/80">Find concerts and events in your city matching your favorite genres and artists</p>
+                <h3 className="font-medium text-white">Events & Experiences You'll Actually Want to Go To</h3>
+                <p className="text-sm text-white/80">We pull concerts in your vibe zone — no random shows, just artists and genres you're obsessed with.</p>
               </div>
             </div>
             
@@ -88,8 +88,8 @@ const ConnectSpotify: React.FC = () => {
                 <Users className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Make New Friends Based Off of Shared Music Taste</h3>
-                <p className="text-sm text-white/80">Meet people in your city who love the same artists and genres you do</p>
+                <h3 className="font-medium text-white">Meet People Who Get Your Taste</h3>
+                <p className="text-sm text-white/80">Link up with locals who stan the same artists. Music soulmates? Maybe.</p>
               </div>
             </div>
           </div>
