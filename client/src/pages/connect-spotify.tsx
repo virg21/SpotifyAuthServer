@@ -63,32 +63,32 @@ const ConnectSpotify: React.FC = () => {
           
           {/* Benefits of connecting */}
           <div className="space-y-6 mb-10">
-            <div className="flex items-start">
+            <div className="flex items-start p-4 rounded-xl border border-[var(--app-primary)] bg-white/5">
               <div className="mt-1 mr-4 bg-white/10 p-2 rounded-full">
                 <Music className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-[var(--app-primary)]">Local Music Insights You Can't Get Anywhere Else</h3>
+                <h3 className="font-medium text-white">Local Music Insights You Can't Get Anywhere Else</h3>
                 <p className="text-sm text-white/80">Discover hidden connections and 1-of-1 facts between your listening habits and your city's music scene</p>
               </div>
             </div>
             
-            <div className="flex items-start">
+            <div className="flex items-start p-4 rounded-xl border border-[var(--app-primary)] bg-white/5">
               <div className="mt-1 mr-4 bg-white/10 p-2 rounded-full">
                 <Calendar className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-[var(--app-primary)]">Tailored Event Recommendations</h3>
+                <h3 className="font-medium text-white">Tailored Event Recommendations</h3>
                 <p className="text-sm text-white/80">Find concerts and events in your city matching your favorite genres and artists</p>
               </div>
             </div>
             
-            <div className="flex items-start">
+            <div className="flex items-start p-4 rounded-xl border border-[var(--app-primary)] bg-white/5">
               <div className="mt-1 mr-4 bg-white/10 p-2 rounded-full">
                 <Headphones className="h-5 w-5 text-[var(--app-primary)]" />
               </div>
               <div>
-                <h3 className="font-medium text-[var(--app-primary)]">Custom Playlists for Events</h3>
+                <h3 className="font-medium text-white">Custom Playlists for Events</h3>
                 <p className="text-sm text-white/80">Get exclusive playlists tailored to local music events in your city</p>
               </div>
             </div>
