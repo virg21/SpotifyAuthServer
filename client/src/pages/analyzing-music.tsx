@@ -30,18 +30,12 @@ const MapPlaceholder: React.FC<{ userName?: string }> = ({ userName = "Brandon C
   );
 };
 
-// Array of music facts to display
+// Array of music facts to display (reduced to 4 as requested)
 const musicFacts = [
   "You vibe with more jazz than 86% of listeners.",
-  "You stream artists tied to 12 different neighborhoods in Chicago.",
   "Your top genre has roots in Chicago's South Side music scene.",
-  "Kanye West, one of your frequent listens, grew up in Chicago's South Shore.",
-  "Your taste in house music connects to Chicago, where the genre was born in the 80s.",
-  "Your favorite soul artists share influences with Chicago's Chess Records legacy.",
-  "You listen to more indie rock than 72% of people in your area.",
   "Three of your top artists have performed at Chicago's Lollapalooza festival.",
-  "Your playlist diversity is higher than 91% of users in your city.",
-  "The blues influence in your music taste traces back to Chicago's historical clubs."
+  "Your playlist diversity is higher than 91% of users in your city."
 ];
 
 // Analysis steps to display
