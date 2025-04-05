@@ -169,4 +169,44 @@
   .animate-fade-in {
     animation: fadeIn 0.8s ease-out forwards;
   }
+  
+  /* Quincy 'Q' logo animation */
+  @keyframes qLoaderPulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.7; }
+  }
+
+  @keyframes qLoaderRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .q-loader {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+  }
+
+  .q-loader-circle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 4px solid transparent;
+    border-radius: 50%;
+    border-top-color: var(--app-primary);
+    animation: qLoaderRotate 1.5s linear infinite;
+  }
+
+  .q-loader-inner {
+    position: absolute;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--app-primary);
+    animation: qLoaderPulse 2s ease-in-out infinite;
+  }
 }

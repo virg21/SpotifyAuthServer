@@ -4,7 +4,7 @@ import MobileLayout from '@/components/MobileLayout';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, CheckCircle, MapPin } from 'lucide-react';
 
-// Map placeholder component - in a real app, you'd use a mapping library like Leaflet or Google Maps
+// Map placeholder component with Quincy "Q" loader animation
 const MapPlaceholder: React.FC<{ userName?: string }> = ({ userName = "Brandon Campbell" }) => {
   return (
     <div className="relative w-full aspect-square bg-neutral-200 rounded-lg mb-4 overflow-hidden">
@@ -15,10 +15,11 @@ const MapPlaceholder: React.FC<{ userName?: string }> = ({ userName = "Brandon C
         ))}
       </div>
       
-      {/* Center pin/marker */}
+      {/* Quincy "Q" loader animation */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        <div className="w-6 h-6 bg-black rounded-full border-2 border-white flex items-center justify-center pulse-animation">
-          <div className="w-2 h-2 bg-white rounded-full"></div>
+        <div className="q-loader">
+          <div className="q-loader-circle"></div>
+          <div className="q-loader-inner">Q</div>
         </div>
       </div>
       
@@ -160,10 +161,14 @@ const AnalyzingMusicPage: React.FC = () => {
                 className="flex items-center justify-between py-3 border-b border-gray-200 animate-fade-in"
               >
                 <div className="flex items-center">
-                  <div className="h-4 w-4 rounded-full border border-gray-400 mr-3"></div>
+                  {/* Q-themed bullet point */}
+                  <div className="h-5 w-5 rounded-full bg-gradient-primary flex items-center justify-center text-white mr-3 text-xs font-bold">
+                    Q
+                  </div>
                   <span className="text-gray-700">{fact}</span>
                 </div>
-                <div className="h-4 w-4 rounded-full border border-gray-400"></div>
+                {/* Small indicator animation */}
+                <div className="h-2 w-2 rounded-full bg-[var(--app-primary)] animate-pulse"></div>
               </div>
             ))}
           </div>
@@ -171,12 +176,14 @@ const AnalyzingMusicPage: React.FC = () => {
         
         {/* Location-based fact only shows after all fun facts are displayed */}
         {showLocationInsight && (
-          <div className="w-full mt-4 bg-blue-50 p-4 rounded-lg border border-blue-200 animate-fade-in">
+          <div className="w-full mt-4 bg-gradient-to-r from-[var(--app-primary)] to-[var(--primary-dark)] p-4 rounded-lg border border-[var(--app-primary)] animate-fade-in">
             <div className="flex items-start">
-              <MapPin className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+              <div className="h-8 w-8 rounded-full bg-white/90 flex items-center justify-center text-[var(--app-primary)] mr-3 text-base font-bold">
+                Q
+              </div>
               <div>
-                <p className="font-medium text-blue-700">Location insight:</p>
-                <p className="text-blue-800">
+                <p className="font-medium text-white text-lg">Location match found!</p>
+                <p className="text-white/90">
                   Based on your location and music taste, you're near Chicago's Wicker Park - 
                   a neighborhood where 3 of your top artists have performed at legendary venue The Empty Bottle!
                 </p>
