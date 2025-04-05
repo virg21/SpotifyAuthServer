@@ -156,22 +156,6 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
               <line x1="12" y1="2" x2="12" y2="15" />
             </svg>
           </button>
-          
-          {/* Playlist button */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              handleGeneratePlaylist(event);
-            }}
-            className="bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-800 p-2 rounded-full shadow-md"
-            title="Generate a playlist for this event"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-          </button>
         </div>
       </div>
       <h3 className="font-bold mt-2 text-gray-800">{event.name}</h3>
