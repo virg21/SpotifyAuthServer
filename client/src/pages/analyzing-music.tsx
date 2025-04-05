@@ -4,24 +4,71 @@ import MobileLayout from '@/components/MobileLayout';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, CheckCircle, MapPin } from 'lucide-react';
 
-// Map placeholder component with Quincy "Q" loader animation
-const MapPlaceholder: React.FC<{ userName?: string }> = ({ userName = "Brandon Campbell" }) => {
+// Map component with Quincy "Q" loader animation and actual map UI
+const MapPlaceholder: React.FC<{ userName?: string; isComplete?: boolean }> = ({ 
+  userName = "Brandon Campbell", 
+  isComplete = false 
+}) => {
   return (
     <div className="relative w-full aspect-square bg-neutral-200 rounded-lg mb-4 overflow-hidden">
-      {/* Simple map grid lines */}
-      <div className="absolute inset-0 grid grid-cols-8 grid-rows-8">
-        {Array.from({ length: 64 }).map((_, i) => (
-          <div key={i} className="border border-neutral-300/30"></div>
-        ))}
-      </div>
-      
-      {/* Quincy "Q" loader animation */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        <div className="q-loader">
-          <div className="q-loader-circle"></div>
-          <div className="q-loader-inner">Q</div>
-        </div>
-      </div>
+      {/* Map background - a more detailed map design for completed state */}
+      {isComplete ? (
+        <>
+          {/* Actual map image with neighborhood grid */}
+          <div className="absolute inset-0 bg-[#E8E8E0]">
+            {/* Street grid pattern */}
+            <div className="absolute inset-0 grid grid-cols-12 grid-rows-12">
+              {Array.from({ length: 144 }).map((_, i) => (
+                <div key={i} className="border border-neutral-300/40"></div>
+              ))}
+            </div>
+            
+            {/* Neighborhood area highlight */}
+            <div className="absolute top-1/4 left-1/3 w-1/2 h-1/2 bg-[var(--app-primary)]/20 rounded-full blur-lg"></div>
+            
+            {/* Main roads */}
+            <div className="absolute top-1/2 left-0 w-full h-[6px] bg-neutral-300"></div>
+            <div className="absolute top-0 left-1/3 w-[6px] h-full bg-neutral-300"></div>
+            <div className="absolute top-[40%] left-0 w-full h-[4px] bg-neutral-300/70"></div>
+            <div className="absolute top-0 left-[60%] w-[4px] h-full bg-neutral-300/70"></div>
+            
+            {/* Venue pin */}
+            <div className="absolute top-[38%] left-[42%] animate-bounce-slow">
+              <div className="w-6 h-6 bg-[var(--app-primary)] rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                🎵
+              </div>
+              <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-[var(--app-primary)] mx-auto -mt-1"></div>
+            </div>
+          </div>
+          
+          {/* Location label */}
+          <div className="absolute top-4 left-4 bg-[var(--app-primary)]/90 text-white px-3 py-1 rounded-md text-sm shadow-md">
+            Wicker Park
+          </div>
+          
+          {/* Venue label */}
+          <div className="absolute bottom-12 left-[35%] bg-black/80 text-white px-3 py-2 rounded-full text-sm shadow-lg flex items-center">
+            <span className="mr-1">🎸</span> The Empty Bottle
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Simple map grid lines for loading state */}
+          <div className="absolute inset-0 grid grid-cols-8 grid-rows-8">
+            {Array.from({ length: 64 }).map((_, i) => (
+              <div key={i} className="border border-neutral-300/30"></div>
+            ))}
+          </div>
+          
+          {/* Quincy "Q" loader animation */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="q-loader">
+              <div className="q-loader-circle"></div>
+              <div className="q-loader-inner">Q</div>
+            </div>
+          </div>
+        </>
+      )}
       
       {/* User label */}
       <div className="absolute bottom-4 left-4 bg-blue-600/80 text-white px-3 py-1 rounded-md text-sm shadow-md">
@@ -72,21 +119,30 @@ const AnalyzingMusicPage: React.FC = () => {
     } else if (currentStep > analysisSteps.length && !isComplete) {
       setIsComplete(true);
       
-      // After all steps are complete, redirect to events page after a delay
-      const redirectTimer = setTimeout(() => {
-        setLocation('/events');
-      }, 8000);
-      
-      return () => clearTimeout(redirectTimer);
+      // No longer auto-redirecting, user will click the button instead
     }
-  }, [currentStep, isComplete, setLocation]);
+  }, [currentStep, isComplete]);
 
-  // State for controlling when to show location insight
+  // States for controlling when to show various elements
   const [showLocationInsight, setShowLocationInsight] = useState(false);
+  const [showMap, setShowMap] = useState(true);
+  const [showFacts, setShowFacts] = useState(false);
+  
+  // First show the map and analysis steps
+  useEffect(() => {
+    if (currentStep > 2 && !showFacts) {
+      // After step 2 completes, show the fun facts section
+      const factsTimer = setTimeout(() => {
+        setShowFacts(true);
+      }, 1000);
+      
+      return () => clearTimeout(factsTimer);
+    }
+  }, [currentStep, showFacts]);
 
   // Add facts in sequence, one at a time
   useEffect(() => {
-    if (displayedFacts.length < musicFacts.length && currentStep > 1) {
+    if (showFacts && displayedFacts.length < musicFacts.length) {
       const timer = setTimeout(() => {
         setDisplayedFacts(prev => {
           // Add the next fact in sequence
@@ -103,7 +159,12 @@ const AnalyzingMusicPage: React.FC = () => {
       
       return () => clearTimeout(insightTimer);
     }
-  }, [displayedFacts, currentStep, showLocationInsight, musicFacts.length, analysisSteps.length]);
+  }, [displayedFacts, currentStep, showLocationInsight, showFacts, musicFacts.length, analysisSteps.length]);
+
+  // Function to handle navigation to events page
+  const handleSeeEvents = () => {
+    setLocation('/events');
+  };
 
   return (
     <MobileLayout 
@@ -115,8 +176,8 @@ const AnalyzingMusicPage: React.FC = () => {
       activeTab="home"
     >
       <div className="flex flex-col items-center justify-start h-full pb-20">
-        {/* Map visualization */}
-        <MapPlaceholder />
+        {/* Map visualization - shows detailed map after all steps complete */}
+        <MapPlaceholder isComplete={showLocationInsight} />
         
         {/* Title */}
         <h1 className="text-2xl font-bold mb-4 text-center">WE'RE TUNING YOUR VIBE 🎧</h1>
@@ -151,7 +212,7 @@ const AnalyzingMusicPage: React.FC = () => {
         </div>
         
         {/* Fun facts section */}
-        {displayedFacts.length > 0 && (
+        {showFacts && displayedFacts.length > 0 && (
           <div className="w-full mb-6">
             <h2 className="text-sm font-semibold uppercase text-gray-500 mb-2">FUN FACTS</h2>
             
@@ -176,17 +237,25 @@ const AnalyzingMusicPage: React.FC = () => {
         
         {/* Location-based fact only shows after all fun facts are displayed */}
         {showLocationInsight && (
-          <div className="w-full mt-4 bg-gradient-to-r from-[var(--app-primary)] to-[var(--primary-dark)] p-4 rounded-lg border border-[var(--app-primary)] animate-fade-in">
+          <div className="w-full mt-4 mb-4 bg-gradient-to-r from-[var(--app-primary)] to-[var(--primary-dark)] p-4 rounded-lg border border-[var(--app-primary)] animate-fade-in">
             <div className="flex items-start">
               <div className="h-8 w-8 rounded-full bg-white/90 flex items-center justify-center text-[var(--app-primary)] mr-3 text-base font-bold">
                 Q
               </div>
               <div>
                 <p className="font-medium text-white text-lg">Location match found!</p>
-                <p className="text-white/90">
-                  Based on your location and music taste, you're near Chicago's Wicker Park - 
-                  a neighborhood where 3 of your top artists have performed at legendary venue The Empty Bottle!
+                <p className="text-white/90 mb-4">
+                  Based on your music taste, there are a lot of shows and experiences near Wicker Park that match your vibe - 
+                  3 of your top artists have performed at legendary venue The Empty Bottle
                 </p>
+                
+                {/* Button to navigate to events page */}
+                <button 
+                  onClick={handleSeeEvents}
+                  className="w-full py-3 bg-white text-[var(--app-primary)] font-semibold rounded-lg shadow-md hover:bg-white/90 transition-colors"
+                >
+                  Discover Hidden Shows Just For You
+                </button>
               </div>
             </div>
           </div>
