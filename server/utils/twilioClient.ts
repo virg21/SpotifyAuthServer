@@ -1,4 +1,5 @@
 import { getEnv } from '../config/env';
+import twilio from 'twilio';
 
 /**
  * Utility class for Twilio API interactions
@@ -16,8 +17,7 @@ export class TwilioClient {
     this.verifySid = getEnv('TWILIO_VERIFY_SERVICE_SID', false);
     
     if (this.isConfigured()) {
-      // Only import Twilio if it's configured
-      const twilio = require('twilio');
+      // Initialize Twilio client
       this.client = twilio(this.accountSid, this.authToken);
     }
   }

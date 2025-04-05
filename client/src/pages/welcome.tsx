@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import MobileLayout from '@/components/MobileLayout';
-import { PhoneIcon, MapPin, Check, Mail } from 'lucide-react';
+import { PhoneIcon, MapPin, Check, Loader } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const WelcomePage: React.FC = () => {
   const [, setLocation] = useLocation();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
   const [locationShared, setLocationShared] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const { toast } = useToast();
   
   // Get current time for the status bar
   const getCurrentTime = () => {
@@ -18,16 +22,107 @@ const WelcomePage: React.FC = () => {
     return `${hours}:${minutes}`;
   };
   
-  const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (!phoneNumber || phoneNumber.length < 10) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid phone number with country code (e.g., +12345678901)",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
-    // In a real app, this would call an API to verify the code
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/verify/phone/1', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phoneNumber })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send verification code');
+      }
+      
+      toast({
+        title: "Verification Code Sent",
+        description: "Enter the code we sent to your phone to continue",
+      });
+      
+      setCodeSent(true);
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send verification code",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-      // Navigate to the Spotify connect page
-      setLocation('/connect-spotify');
-    }, 1500);
+    }
+  };
+  
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!verificationCode) {
+      toast({
+        title: "Missing Code",
+        description: "Please enter the verification code from your SMS",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setVerifyLoading(true);
+    
+    try {
+      const response = await fetch('/api/verify/code/1', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code: verificationCode })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to verify code');
+      }
+      
+      if (data.verified) {
+        toast({
+          title: "Phone Verified",
+          description: "Your phone number has been verified successfully"
+        });
+        
+        // Navigate to the Spotify connect page
+        setLocation('/connect-spotify');
+      } else {
+        toast({
+          title: "Invalid Code",
+          description: "The verification code is invalid or expired. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to verify code",
+        variant: "destructive"
+      });
+    } finally {
+      setVerifyLoading(false);
+    }
   };
   
   const handleShareLocation = () => {
@@ -71,38 +166,78 @@ const WelcomePage: React.FC = () => {
         
         {/* Phone verification form */}
         <div className="w-full mb-6">
-          <form onSubmit={handleSignIn}>
-            <div className="mb-4">
-              <input
-                type="tel"
-                id="phone"
-                placeholder="Phone number"
-                className="input-field"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="mb-6">
-              <input
-                type="text"
-                id="verification"
-                placeholder="Verification code"
-                className="input-field"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-              />
-            </div>
-            
-            <button 
-              type="submit" 
-              className="btn-primary"
-              disabled={isLoading || !phoneNumber}
-            >
-              Sign In
-            </button>
-          </form>
+          {!codeSent ? (
+            <form onSubmit={handleSendCode}>
+              <div className="mb-4">
+                <div className="relative">
+                  <input
+                    type="tel"
+                    id="phone"
+                    placeholder="Phone number (with country code)"
+                    className="input-field pl-10"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    required
+                  />
+                  <PhoneIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70" size={16} />
+                </div>
+                <p className="text-xs text-white/60 mt-1">
+                  Format: +1XXXXXXXXXX (include country code)
+                </p>
+              </div>
+              
+              <button 
+                type="submit" 
+                className="btn-primary w-full flex items-center justify-center"
+                disabled={isLoading || !phoneNumber}
+              >
+                {isLoading ? (
+                  <Loader className="animate-spin mr-2" size={16} />
+                ) : null}
+                Send Verification Code
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyCode}>
+              <div className="mb-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="verification"
+                    placeholder="Enter 6-digit code"
+                    className="input-field"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-xs text-white/60">
+                    Code sent to {phoneNumber}
+                  </p>
+                  <button 
+                    type="button"
+                    className="text-xs text-[var(--app-primary)] hover:underline"
+                    onClick={() => handleSendCode()}
+                    disabled={isLoading}
+                  >
+                    Resend Code
+                  </button>
+                </div>
+              </div>
+              
+              <button 
+                type="submit" 
+                className="btn-primary w-full flex items-center justify-center"
+                disabled={verifyLoading || !verificationCode}
+              >
+                {verifyLoading ? (
+                  <Loader className="animate-spin mr-2" size={16} />
+                ) : null}
+                Verify Code
+              </button>
+            </form>
+          )}
         </div>
         
         {/* Location sharing option */}
@@ -116,17 +251,6 @@ const WelcomePage: React.FC = () => {
           <p className="text-white">
             Share My Location
           </p>
-        </div>
-        
-        {/* Email Verification Option */}
-        <div className="w-full mt-6 flex justify-center">
-          <button
-            onClick={() => setLocation('/verify-email')}
-            className="flex items-center text-[var(--app-primary)] hover:text-white transition-colors"
-          >
-            <Mail size={16} className="mr-2" />
-            Use Email Verification Instead
-          </button>
         </div>
         
         {/* Terms and privacy note */}
