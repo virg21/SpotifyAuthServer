@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import MobileLayout from '@/components/MobileLayout';
-import { PhoneIcon, MapPin, Check } from 'lucide-react';
+import { PhoneIcon, MapPin, Check, Mail } from 'lucide-react';
 
 const WelcomePage: React.FC = () => {
   const [, setLocation] = useLocation();
@@ -116,6 +116,17 @@ const WelcomePage: React.FC = () => {
           <p className="text-white">
             Share My Location
           </p>
+        </div>
+        
+        {/* Email Verification Option */}
+        <div className="w-full mt-6 flex justify-center">
+          <button
+            onClick={() => setLocation('/verify-email')}
+            className="flex items-center text-[var(--app-primary)] hover:text-white transition-colors"
+          >
+            <Mail size={16} className="mr-2" />
+            Use Email Verification Instead
+          </button>
         </div>
         
         {/* Terms and privacy note */}

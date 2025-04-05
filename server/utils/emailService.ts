@@ -24,18 +24,19 @@ class EmailService {
     }
 
     try {
+      console.log(`Sending verification email to ${to} with code ${code}`);
       const msg = {
         to,
         from: fromEmail,
         subject: 'Verify your email address for Quincy',
-        text: `Your verification code is: ${code}. It expires in 15 minutes.`,
+        text: `Your verification code is: ${code}. It expires in 30 minutes.`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #00442C; text-align: center;">Quincy Email Verification</h2>
             <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-top: 20px;">
               <p>Your verification code is:</p>
               <h1 style="color: #F73E7C; text-align: center; font-size: 32px; letter-spacing: 5px;">${code}</h1>
-              <p style="color: #777; font-size: 14px;">This code will expire in 15 minutes.</p>
+              <p style="color: #777; font-size: 14px;">This code will expire in 30 minutes.</p>
             </div>
             <p style="margin-top: 20px;">
               Thank you for joining Quincy, where we connect your music taste to your city's scene.
@@ -45,9 +46,64 @@ class EmailService {
       };
 
       await sgMail.send(msg);
+      console.log('Verification email sent successfully');
       return true;
     } catch (error) {
       console.error('Error sending verification email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send welcome email after successful verification
+   */
+  async sendWelcomeEmail(to: string, displayName: string): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      console.warn('SendGrid API key not set. Skipping email sending.');
+      return false;
+    }
+
+    try {
+      console.log(`Sending welcome email to ${to}`);
+      const msg = {
+        to,
+        from: fromEmail,
+        subject: 'Welcome to Quincy! Let\'s discover music events',
+        text: `Hi ${displayName}, welcome to Quincy! We're excited to help you discover music events tailored to your tastes.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #00442C; text-align: center;">Welcome to Quincy!</h2>
+            <div style="background-color: #f9f9f9; padding: 25px; border-radius: 8px; margin-top: 20px; border-left: 5px solid #F73E7C;">
+              <h3 style="margin-top: 0; color: #F73E7C;">Hi ${displayName},</h3>
+              <p>Thanks for joining Quincy! We're excited to connect your music taste to live events in your city.</p>
+              <p>Here's what you can do next:</p>
+              <ul style="padding-left: 20px;">
+                <li>Connect your Spotify account to unlock personalized recommendations</li>
+                <li>Explore events in your area that match your music taste</li>
+                <li>Create custom playlists for upcoming events</li>
+                <li>Share events with friends</li>
+              </ul>
+            </div>
+            
+            <div style="margin-top: 30px; text-align: center;">
+              <a href="${process.env.APP_URL || 'https://quincy.example.com'}/connect-spotify" 
+                style="background-color: #1DB954; color: white; padding: 12px 20px; text-decoration: none; border-radius: 25px; font-weight: bold;">
+                Connect Spotify Now
+              </a>
+            </div>
+            
+            <p style="margin-top: 25px; text-align: center;">
+              Get ready to discover amazing music events tailored just for you!
+            </p>
+          </div>
+        `,
+      };
+
+      await sgMail.send(msg);
+      console.log('Welcome email sent successfully');
+      return true;
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
       return false;
     }
   }
