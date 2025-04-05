@@ -80,23 +80,29 @@ const AnalyzingMusicPage: React.FC = () => {
     }
   }, [currentStep, isComplete, setLocation]);
 
-  // Add a new fact every few seconds
+  // State for controlling when to show location insight
+  const [showLocationInsight, setShowLocationInsight] = useState(false);
+
+  // Add facts in sequence, one at a time
   useEffect(() => {
     if (displayedFacts.length < musicFacts.length && currentStep > 1) {
       const timer = setTimeout(() => {
         setDisplayedFacts(prev => {
-          // Get a random fact that hasn't been displayed yet
-          const availableFacts = musicFacts.filter(fact => !prev.includes(fact));
-          if (availableFacts.length === 0) return prev;
-          
-          const randomIndex = Math.floor(Math.random() * availableFacts.length);
-          return [...prev, availableFacts[randomIndex]];
+          // Add the next fact in sequence
+          return [...prev, musicFacts[prev.length]];
         });
-      }, 4000);
+      }, 2500); // Slightly faster to show facts
       
       return () => clearTimeout(timer);
+    } else if (displayedFacts.length >= musicFacts.length && !showLocationInsight && currentStep > analysisSteps.length) {
+      // Once all facts are displayed, show location insight after a delay
+      const insightTimer = setTimeout(() => {
+        setShowLocationInsight(true);
+      }, 1500);
+      
+      return () => clearTimeout(insightTimer);
     }
-  }, [displayedFacts, currentStep]);
+  }, [displayedFacts, currentStep, showLocationInsight, musicFacts.length, analysisSteps.length]);
 
   return (
     <MobileLayout 
@@ -163,8 +169,8 @@ const AnalyzingMusicPage: React.FC = () => {
           </div>
         )}
         
-        {/* Location-based fact when analysis is complete */}
-        {currentStep > analysisSteps.length && (
+        {/* Location-based fact only shows after all fun facts are displayed */}
+        {showLocationInsight && (
           <div className="w-full mt-4 bg-blue-50 p-4 rounded-lg border border-blue-200 animate-fade-in">
             <div className="flex items-start">
               <MapPin className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
