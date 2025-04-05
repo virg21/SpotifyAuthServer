@@ -4,14 +4,15 @@ import { Event } from "@shared/schema";
 import MobileLayout from "@/components/MobileLayout";
 import { Link } from "wouter";
 
-// Extended Event type with additional fields we need for the UI
-interface EventWithRelevance extends Partial<Event> {
-  id: number;
-  name: string;
-  venue: string;
-  date: Date;
+interface EventWithRelevance extends Event {
   relevanceScore?: number;
   personalReason?: string;
+}
+
+interface MoodCategory {
+  id: string;
+  name: string;
+  keywords: string;
 }
 
 // Simple event card component based on the mockup
@@ -78,14 +79,14 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
   );
 };
 
-const EventsPage: FC = () => {
+const MobileEventsPage: FC = () => {
   // Fetch personalized recommendations
   const { data: personalizedData, isLoading } = useQuery<{ count: number, events: EventWithRelevance[] }>({
     queryKey: ["/api/recommendations/personal"],
   });
   
-  // Sample events to match the design
-  const dummyEvents: EventWithRelevance[] = [
+  // Use either real data or dummy data for demonstration purposes
+  const events = personalizedData?.events || [
     {
       id: 1,
       name: "Jazz Night @ The Dawson",
@@ -98,11 +99,10 @@ const EventsPage: FC = () => {
       personalReason: "Because you've been listening to Coltrane and Chet Baker",
       externalId: "jazz-night-1",
       genre: "Jazz",
-      imageUrl: null,
       ticketUrl: null,
-      source: null,
-      reason: null,
-      city: "Chicago"
+      imageUrl: null,
+      scraperSource: null,
+      createdAt: new Date()
     },
     {
       id: 2,
@@ -116,11 +116,10 @@ const EventsPage: FC = () => {
       personalReason: "Since you love Snoh Aalegra and vibey Sunday tracks",
       externalId: "neo-soul-1",
       genre: "Neo-Soul",
-      imageUrl: null,
       ticketUrl: null,
-      source: null,
-      reason: null,
-      city: "Chicago"
+      imageUrl: null,
+      scraperSource: null,
+      createdAt: new Date()
     },
     {
       id: 3,
@@ -134,11 +133,10 @@ const EventsPage: FC = () => {
       personalReason: "Your favorite rapper Jay Z just ate at this resrestaurant",
       externalId: "jay-z-1",
       genre: "Hip-Hop",
-      imageUrl: null,
       ticketUrl: null,
-      source: null,
-      reason: null,
-      city: "Chicago"
+      imageUrl: null,
+      scraperSource: null,
+      createdAt: new Date()
     },
     {
       id: 4,
@@ -152,16 +150,13 @@ const EventsPage: FC = () => {
       personalReason: "Your most streamed artist in 2024 is doing a small show in Chicago",
       externalId: "slick-rick-1",
       genre: "Hip-Hop",
-      imageUrl: null,
       ticketUrl: null,
-      source: null,
-      reason: null,
-      city: "Chicago"
+      imageUrl: null,
+      scraperSource: null,
+      createdAt: new Date()
     }
   ];
-
-  // Use either real data or dummy data
-  const events = personalizedData?.events?.length ? personalizedData.events : dummyEvents;
+  
   const eventCount = events.length;
   
   return (
@@ -216,4 +211,4 @@ const EventsPage: FC = () => {
   );
 };
 
-export default EventsPage;
+export default MobileEventsPage;
