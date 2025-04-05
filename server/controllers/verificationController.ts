@@ -19,7 +19,13 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       });
     }
     
-    const { phoneNumber } = validation.data;
+    let { phoneNumber } = validation.data;
+    
+    // Ensure the phone number has the proper format for Twilio
+    // Twilio requires phone numbers to be in E.164 format (with + prefix)
+    if (!phoneNumber.startsWith('+')) {
+      phoneNumber = `+${phoneNumber}`;
+    }
     
     // Check if Twilio is configured
     if (!twilioClient.isConfigured()) {
@@ -115,6 +121,14 @@ export const verifyCode = async (req: Request, res: Response) => {
       });
     }
     
+    // Ensure the phone number has the proper format for Twilio
+    let phoneNumber = user.phoneNumber;
+    if (!phoneNumber.startsWith('+')) {
+      phoneNumber = `+${phoneNumber}`;
+      // Update the user's phone number in the database with the corrected format
+      await storage.updateUser(userId, { phoneNumber });
+    }
+    
     // Check if Twilio is configured
     if (!twilioClient.isConfigured()) {
       // If Twilio is not configured, we'll use a mock verification
@@ -135,7 +149,7 @@ export const verifyCode = async (req: Request, res: Response) => {
     }
     
     // Verify code with Twilio
-    const verificationCheck = await twilioClient.verifyCode(user.phoneNumber, code);
+    const verificationCheck = await twilioClient.verifyCode(phoneNumber, code);
     console.log('Twilio verification check:', verificationCheck);
     
     if (verificationCheck.status === 'approved') {

@@ -26,6 +26,7 @@ const WelcomePage: React.FC = () => {
   const handleSendCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
+    // Validate phone number format
     if (!phoneNumber || phoneNumber.length < 10) {
       toast({
         title: "Invalid Phone Number",
@@ -33,6 +34,13 @@ const WelcomePage: React.FC = () => {
         variant: "destructive"
       });
       return;
+    }
+    
+    // Ensure it has + prefix for E.164 format
+    let formattedPhone = phoneNumber;
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = `+${formattedPhone}`;
+      setPhoneNumber(formattedPhone);
     }
     
     setIsLoading(true);
@@ -43,7 +51,7 @@ const WelcomePage: React.FC = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ phoneNumber })
+        body: JSON.stringify({ phoneNumber: formattedPhone })
       });
       
       const data = await response.json();
