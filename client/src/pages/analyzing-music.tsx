@@ -191,19 +191,19 @@ const AnalyzingMusicPage: React.FC = () => {
             return (
               <div 
                 key={step.id} 
-                className={`flex items-center justify-between py-3 border-b border-gray-200 ${isActive ? 'animate-pulse' : ''}`}
+                className={`flex items-center justify-between py-3 border-b border-white/20 ${isActive ? 'animate-pulse' : ''}`}
               >
                 <div className="flex items-center">
                   {isComplete ? (
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                    <CheckCircle className="h-5 w-5 text-[var(--app-primary)] mr-3" />
                   ) : (
-                    <Loader2 className={`h-5 w-5 mr-3 ${isActive ? 'animate-spin text-blue-500' : 'text-gray-300'}`} />
+                    <Loader2 className={`h-5 w-5 mr-3 ${isActive ? 'animate-spin text-[var(--app-primary)]' : 'text-white/30'}`} />
                   )}
-                  <span className={`${isComplete ? 'text-gray-700' : isActive ? 'text-gray-800' : 'text-gray-400'}`}>
+                  <span className={`${isComplete ? 'text-white' : isActive ? 'text-white' : 'text-white/60'}`}>
                     {step.text}
                   </span>
                 </div>
-                <span className="text-gray-400">
+                <span className={`${isComplete ? 'text-[var(--app-primary)]' : 'text-white/60'}`}>
                   {isComplete ? '✓' : isActive ? '...' : '...'}
                 </span>
               </div>
@@ -214,19 +214,19 @@ const AnalyzingMusicPage: React.FC = () => {
         {/* Fun facts section */}
         {showFacts && displayedFacts.length > 0 && (
           <div className="w-full mb-6">
-            <h2 className="text-sm font-semibold uppercase text-gray-500 mb-2">FUN FACTS</h2>
+            <h2 className="text-sm font-semibold uppercase text-white/80 mb-2">FUN FACTS</h2>
             
             {displayedFacts.map((fact, index) => (
               <div 
                 key={index} 
-                className="flex items-center justify-between py-3 border-b border-gray-200 animate-fade-in"
+                className="flex items-center justify-between py-3 border-b border-white/20 animate-fade-in"
               >
                 <div className="flex items-center">
                   {/* Q-themed bullet point */}
                   <div className="h-5 w-5 rounded-full bg-gradient-primary flex items-center justify-center text-white mr-3 text-xs font-bold">
                     Q
                   </div>
-                  <span className="text-gray-700">{fact}</span>
+                  <span className="text-white">{fact}</span>
                 </div>
                 {/* Small indicator animation */}
                 <div className="h-2 w-2 rounded-full bg-[var(--app-primary)] animate-pulse"></div>
