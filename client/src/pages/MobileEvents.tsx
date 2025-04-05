@@ -4,7 +4,23 @@ import { Event } from "@shared/schema";
 import MobileLayout from "@/components/MobileLayout";
 import { Link } from "wouter";
 
-interface EventWithRelevance extends Event {
+// Genre-based image URLs (shared with events.tsx)
+const GENRE_IMAGES = {
+  jazz: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?q=80&w=800&auto=format&fit=crop",
+  rock: "https://images.unsplash.com/photo-1559519530-746235b23764?q=80&w=800&auto=format&fit=crop",
+  hiphop: "https://images.unsplash.com/photo-1547355253-ff0740f6e8c1?q=80&w=800&auto=format&fit=crop",
+  pop: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=800&auto=format&fit=crop",
+  electronic: "https://images.unsplash.com/photo-1571397133301-3f1b6e19284f?q=80&w=800&auto=format&fit=crop",
+  classical: "https://images.unsplash.com/photo-1468164016595-6108e4c60c8b?q=80&w=800&auto=format&fit=crop",
+  rb: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=800&auto=format&fit=crop",
+  default: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=800&auto=format&fit=crop"
+};
+
+interface EventWithRelevance extends Partial<Event> {
+  id: number;
+  name: string;
+  venue: string;
+  date: Date;
   relevanceScore?: number;
   personalReason?: string;
 }
@@ -14,6 +30,43 @@ interface MoodCategory {
   name: string;
   keywords: string;
 }
+
+// Helper function to get image based on event genre or type (similar to events.tsx)
+const getEventImage = (event: EventWithRelevance): string => {
+  // If event has a direct image URL, use that
+  if (event.imageUrl) {
+    return event.imageUrl;
+  }
+  
+  // Check genre to determine appropriate image
+  const genre = event.genre?.toLowerCase() || '';
+  const eventName = event.name.toLowerCase();
+  const eventDescription = event.description?.toLowerCase() || '';
+  
+  // Check for different genres/instruments
+  if (genre.includes('jazz') || eventName.includes('jazz') || eventDescription.includes('jazz')) {
+    return GENRE_IMAGES.jazz;
+  } else if (genre.includes('hip') || genre.includes('hop') || genre.includes('rap') || 
+           eventName.includes('rap') || eventDescription.includes('hip-hop')) {
+    return GENRE_IMAGES.hiphop;
+  } else if (genre.includes('rock') || eventName.includes('rock')) {
+    return GENRE_IMAGES.rock;
+  } else if (genre.includes('pop') || eventName.includes('pop')) {
+    return GENRE_IMAGES.pop;
+  } else if (genre.includes('electronic') || genre.includes('edm') || genre.includes('dj') || 
+           eventName.includes('dj') || eventDescription.includes('electronic')) {
+    return GENRE_IMAGES.electronic;
+  } else if (genre.includes('classical') || genre.includes('orchestra') || 
+           eventName.includes('symphony') || eventDescription.includes('classical')) {
+    return GENRE_IMAGES.classical;
+  } else if (genre.includes('r&b') || genre.includes('soul') || 
+           eventName.includes('soul') || eventDescription.includes('r&b')) {
+    return GENRE_IMAGES.rb;
+  }
+  
+  // Default concert image for other genres
+  return GENRE_IMAGES.default;
+};
 
 // Simple event card component based on the mockup
 const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
@@ -55,20 +108,17 @@ const SimpleEventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
     return null;
   };
 
+  // Get appropriate event image based on genre
+  const eventImage = getEventImage(event);
+
   return (
     <div className="mb-4">
       <div className="bg-gray-100 rounded-md aspect-square flex items-center justify-center overflow-hidden">
-        {event.imageUrl ? (
-          <img 
-            src={event.imageUrl} 
-            alt={event.name} 
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        )}
+        <img 
+          src={eventImage} 
+          alt={event.name} 
+          className="w-full h-full object-cover"
+        />
       </div>
       <h3 className="font-bold mt-2 text-gray-800">{event.name}</h3>
       <p className="text-sm text-gray-600 mt-1">
@@ -101,8 +151,10 @@ const MobileEventsPage: FC = () => {
       genre: "Jazz",
       ticketUrl: null,
       imageUrl: null,
-      scraperSource: null,
-      createdAt: new Date()
+      source: null,
+      reason: null,
+      city: "Chicago",
+      relevanceScore: 0.92
     },
     {
       id: 2,
@@ -118,8 +170,10 @@ const MobileEventsPage: FC = () => {
       genre: "Neo-Soul",
       ticketUrl: null,
       imageUrl: null,
-      scraperSource: null,
-      createdAt: new Date()
+      source: null,
+      reason: null,
+      city: "Chicago",
+      relevanceScore: 0.88
     },
     {
       id: 3,
@@ -130,13 +184,15 @@ const MobileEventsPage: FC = () => {
       price: "Free entry",
       latitude: 41.88,
       longitude: -87.64,
-      personalReason: "Your favorite rapper Jay Z just ate at this resrestaurant",
+      personalReason: "Your favorite rapper Jay Z just ate at this restaurant",
       externalId: "jay-z-1",
       genre: "Hip-Hop",
       ticketUrl: null,
       imageUrl: null,
-      scraperSource: null,
-      createdAt: new Date()
+      source: null,
+      reason: null,
+      city: "Chicago",
+      relevanceScore: 0.95
     },
     {
       id: 4,
@@ -152,8 +208,10 @@ const MobileEventsPage: FC = () => {
       genre: "Hip-Hop",
       ticketUrl: null,
       imageUrl: null,
-      scraperSource: null,
-      createdAt: new Date()
+      source: null,
+      reason: null,
+      city: "Chicago",
+      relevanceScore: 0.85
     }
   ];
   

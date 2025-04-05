@@ -17,6 +17,18 @@ import { formatDistance, format } from "date-fns";
 import { Event } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
+// Genre-based image URLs
+const GENRE_IMAGES = {
+  jazz: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?q=80&w=800&auto=format&fit=crop",
+  rock: "https://images.unsplash.com/photo-1559519530-746235b23764?q=80&w=800&auto=format&fit=crop",
+  hiphop: "https://images.unsplash.com/photo-1547355253-ff0740f6e8c1?q=80&w=800&auto=format&fit=crop",
+  pop: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=800&auto=format&fit=crop",
+  electronic: "https://images.unsplash.com/photo-1571397133301-3f1b6e19284f?q=80&w=800&auto=format&fit=crop",
+  classical: "https://images.unsplash.com/photo-1468164016595-6108e4c60c8b?q=80&w=800&auto=format&fit=crop",
+  rb: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=800&auto=format&fit=crop",
+  default: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=800&auto=format&fit=crop"
+};
+
 interface EventWithRelevance extends Partial<Event> {
   id: number;
   name: string;
@@ -33,6 +45,43 @@ interface MoodCategory {
   isRecommended?: boolean;
 }
 
+// Helper function to get image based on event genre or type
+const getEventImage = (event: EventWithRelevance): string => {
+  // If event has a direct image URL, use that
+  if (event.imageUrl) {
+    return event.imageUrl;
+  }
+  
+  // Check genre to determine appropriate image
+  const genre = event.genre?.toLowerCase() || '';
+  const eventName = event.name.toLowerCase();
+  const eventDescription = event.description?.toLowerCase() || '';
+  
+  // Check for different genres/instruments
+  if (genre.includes('jazz') || eventName.includes('jazz') || eventDescription.includes('jazz')) {
+    return GENRE_IMAGES.jazz;
+  } else if (genre.includes('hip') || genre.includes('hop') || genre.includes('rap') || 
+            eventName.includes('rap') || eventDescription.includes('hip-hop')) {
+    return GENRE_IMAGES.hiphop;
+  } else if (genre.includes('rock') || eventName.includes('rock')) {
+    return GENRE_IMAGES.rock;
+  } else if (genre.includes('pop') || eventName.includes('pop')) {
+    return GENRE_IMAGES.pop;
+  } else if (genre.includes('electronic') || genre.includes('edm') || genre.includes('dj') || 
+            eventName.includes('dj') || eventDescription.includes('electronic')) {
+    return GENRE_IMAGES.electronic;
+  } else if (genre.includes('classical') || genre.includes('orchestra') || 
+            eventName.includes('symphony') || eventDescription.includes('classical')) {
+    return GENRE_IMAGES.classical;
+  } else if (genre.includes('r&b') || genre.includes('soul') || 
+            eventName.includes('soul') || eventDescription.includes('r&b')) {
+    return GENRE_IMAGES.rb;
+  }
+  
+  // Default concert image for other genres
+  return GENRE_IMAGES.default;
+};
+
 const EventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
   const eventDate = new Date(event.date);
   const isUpcoming = eventDate > new Date();
@@ -43,12 +92,15 @@ const EventCard: FC<{ event: EventWithRelevance }> = ({ event }) => {
   
   // Calculate if the event is happening soon (within 7 days)
   const isHappeningSoon = isUpcoming && (eventDate.getTime() - new Date().getTime()) < 7 * 24 * 60 * 60 * 1000;
+  
+  // Get appropriate image for the event
+  const eventImage = getEventImage(event);
 
   return (
     <Card className="h-full overflow-hidden transition-all hover:shadow-lg border-neutral-200 hover:border-primary/20">
       <div className="aspect-video relative overflow-hidden">
         <img 
-          src={event.imageUrl || "https://via.placeholder.com/300x180?text=No+Image"} 
+          src={eventImage} 
           alt={event.name} 
           className="w-full h-full object-cover transition-transform hover:scale-105"
         />
