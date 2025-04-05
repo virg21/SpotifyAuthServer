@@ -249,6 +249,9 @@ const WelcomePage: React.FC = () => {
                     Resend Code
                   </button>
                 </div>
+                <p className="text-xs text-white/70 mt-1 border border-[var(--app-primary)] rounded p-1">
+                  <span className="font-semibold">Dev Mode:</span> Use code "123456" for any phone number
+                </p>
               </div>
               
               <button 
