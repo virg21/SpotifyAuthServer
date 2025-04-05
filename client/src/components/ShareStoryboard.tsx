@@ -25,7 +25,42 @@ const ShareStoryboard = ({ event, isOpen, onClose }: ShareStoryboardProps) => {
   const [step, setStep] = useState(0);
   const [shareUrl, setShareUrl] = useState('');
   const [copied, setCopied] = useState(false);
+  const [countdownText, setCountdownText] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Calculate time remaining for countdown
+  const calculateTimeRemaining = () => {
+    if (!event || !event.date) {
+      return '';
+    }
+    
+    // Get event date
+    const eventDate = new Date(event.date);
+    const now = new Date();
+    
+    // Calculate time difference in milliseconds
+    const diff = eventDate.getTime() - now.getTime();
+    
+    // Check if event has already happened
+    if (diff <= 0) {
+      return 'This event has already happened';
+    }
+    
+    // Calculate days, hours, minutes
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    // Format countdown text
+    if (days > 0) {
+      return `${days} day${days !== 1 ? 's' : ''}, ${hours} hr${hours !== 1 ? 's' : ''} until event`;
+    } else if (hours > 0) {
+      return `${hours} hr${hours !== 1 ? 's' : ''}, ${minutes} min${minutes !== 1 ? 's' : ''} until event`;
+    } else {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} until event`;
+    }
+  };
   
   // Reset step when dialog opens
   useEffect(() => {
@@ -37,8 +72,24 @@ const ShareStoryboard = ({ event, isOpen, onClose }: ShareStoryboardProps) => {
       if (event) {
         const baseUrl = window.location.origin;
         setShareUrl(`${baseUrl}/event/${event.id}?ref=share`);
+        
+        // Initialize countdown
+        setCountdownText(calculateTimeRemaining());
+        
+        // Update countdown every minute
+        countdownIntervalRef.current = setInterval(() => {
+          setCountdownText(calculateTimeRemaining());
+        }, 60000);
       }
     }
+    
+    // Clean up interval when dialog closes
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+    };
   }, [isOpen, event]);
   
   // Generate preview image when event changes or when we reach the preview step
@@ -194,7 +245,20 @@ const ShareStoryboard = ({ event, isOpen, onClose }: ShareStoryboardProps) => {
         </div>
       </div>
       <h3 className="text-xl font-semibold mb-4">Share this event with friends</h3>
-      <p className="text-muted-foreground mb-8">Let your music-loving friends know about this awesome event!</p>
+      <p className="text-muted-foreground mb-4">Let your music-loving friends know about this awesome event!</p>
+      
+      {/* Countdown timer */}
+      {countdownText && (
+        <div className="mt-4 py-2 px-4 bg-primary/10 rounded-lg border border-primary/20 animate-pulse">
+          <div className="flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <p className="font-medium text-primary">{countdownText}</p>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
   
