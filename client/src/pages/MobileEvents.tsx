@@ -362,8 +362,26 @@ const MobileEventsPage: FC = () => {
           ))}
         </div>
         
+        {/* Playlist generation button */}
+        <button 
+          className="w-full py-3 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-md font-medium my-3 flex items-center justify-center"
+          onClick={() => {
+            // Select the first event in the list for playlist generation
+            if (events.length > 0) {
+              handleGeneratePlaylist(events[0]);
+            }
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
+          </svg>
+          Create Event Playlist
+        </button>
+        
         {/* Turn on notifications button */}
-        <button className="w-full py-3 bg-gray-800 text-white rounded-md font-medium my-4">
+        <button className="w-full py-3 bg-gray-800 text-white rounded-md font-medium mb-4">
           Turn On Notifications
         </button>
         
