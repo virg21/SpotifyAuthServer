@@ -1,35 +1,22 @@
-import express from 'express';
-import { login, callback, refreshToken, register } from '../controllers/authController';
-import { getAuthLimiter, getStandardLimiter } from '../middleware/rateLimiter';
+import { Router } from 'express';
+import * as authController from '../controllers/authController';
+import * as verificationController from '../controllers/verificationController';
 
-const router = express.Router();
+const router = Router();
 
-/**
- * @route   GET /api/auth/login
- * @desc    Redirects to Spotify login page
- * @access  Public
- */
-router.get('/login', getStandardLimiter(), login);
+// Phone verification routes
+router.post('/phone/send-verification', verificationController.sendVerificationCode);
+router.post('/phone/verify', verificationController.verifyCode);
 
-/**
- * @route   GET /api/auth/callback
- * @desc    Callback from Spotify after authorization
- * @access  Public
- */
-router.get('/callback', callback);
+// Spotify OAuth routes
+router.get('/spotify/login', authController.initiateSpotifyLogin);
+router.get('/spotify/callback', authController.handleSpotifyCallback);
+router.post('/spotify/refresh', authController.refreshSpotifyToken);
 
-/**
- * @route   POST /api/auth/refresh
- * @desc    Refresh access token using refresh token
- * @access  Public
- */
-router.post('/refresh', getStandardLimiter(), refreshToken);
-
-/**
- * @route   POST /api/auth/register
- * @desc    Register a new user
- * @access  Public
- */
-router.post('/register', getAuthLimiter(), register);
+// User authentication routes
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.post('/logout', authController.logout);
+router.get('/me', authController.getCurrentUser);
 
 export default router;

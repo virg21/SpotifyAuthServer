@@ -1,198 +1,312 @@
-import express, { Request, Response } from 'express';
-import axios from 'axios';
-import querystring from 'querystring';
-import { getEnv } from '../config/env';
+import { Request, Response } from 'express';
 import { storage } from '../storage';
-import { SpotifyApi } from '../utils/spotifyApi';
-
-/**
- * Register a new user
- * @param req
- * @param res
- */
-export const register = async (req: Request, res: Response) => {
-  try {
-    const { username, password, displayName, email, birthday } = req.body;
-    
-    // Check if user already exists
-    const existingUser = await storage.getUserByUsername(username);
-    if (existingUser) {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
-    
-    // Create new user
-    const user = await storage.createUser({
-      username,
-      password,
-      displayName,
-      email,
-      birthday,
-      spotifyId: null,
-      accessToken: null,
-      refreshToken: null
-    });
-    
-    // Don't return sensitive information
-    const { password: userPassword, ...userWithoutPassword } = user;
-    
-    res.status(201).json({
-      message: 'User created successfully',
-      user: userWithoutPassword
-    });
-  } catch (error) {
-    console.error('Error registering user:', error);
-    res.status(500).json({ message: 'Error registering user' });
-  }
-};
+import { insertUserSchema } from '@shared/schema';
+import * as spotifyApi from '../utils/spotifyApi';
+import { sendVerificationCode } from './verificationController';
 
 /**
  * Initiates the Spotify authorization flow
  * Redirects the user to Spotify's authorization page
+ * @route GET /api/auth/spotify/login
  */
-export const login = (req: Request, res: Response) => {
+export const initiateSpotifyLogin = (req: Request, res: Response) => {
   try {
-    // Generate a random state for CSRF protection
-    const state = Math.random().toString(36).substring(2, 15);
+    // Get userId from session if available
+    const userId = req.session.userId;
     
-    // Set state in session
-    req.session.state = state;
+    // Generate state parameter to include the userId for connecting accounts later
+    const state = userId ? JSON.stringify({ userId }) : undefined;
     
-    // Define the scopes for permissions
-    const scope = [
-      'user-read-private',
-      'user-read-email',
-      'user-top-read',
-      'user-read-recently-played',
-      'user-library-read'
-    ].join(' ');
+    // Get authorization URL from Spotify API utils
+    const authUrl = spotifyApi.getAuthorizationUrl(state);
     
-    const spotifyAuthUrl = 'https://accounts.spotify.com/authorize?' + 
-      querystring.stringify({
-        response_type: 'code',
-        client_id: getEnv('SPOTIFY_CLIENT_ID'),
-        scope: scope,
-        redirect_uri: getEnv('REDIRECT_URI'),
-        state: state
-      });
-    
-    // Redirect to Spotify login
-    res.redirect(spotifyAuthUrl);
+    // Redirect to Spotify authorization page
+    res.redirect(authUrl);
   } catch (error) {
-    console.error('Error in login:', error);
-    res.status(500).json({ message: 'Error initiating authentication flow' });
+    console.error('Error initiating Spotify login:', error);
+    res.status(500).json({ error: 'Failed to initiate Spotify login' });
   }
 };
 
 /**
  * Handles the callback from Spotify authorization
  * Exchanges authorization code for access and refresh tokens
+ * Creates or updates user with Spotify data
+ * @route GET /api/auth/spotify/callback
  */
-export const callback = async (req: Request, res: Response) => {
+export const handleSpotifyCallback = async (req: Request, res: Response) => {
   try {
-    const code = req.query.code as string;
-    const state = req.query.state as string;
+    const { code, state } = req.query;
     
-    // Verify state matches to prevent CSRF
-    if (state !== req.session.state) {
-      return res.status(403).json({ message: 'State mismatch' });
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code is required' });
     }
     
-    // Clear state from session
-    req.session.state = undefined;
-    
-    // Exchange code for tokens
-    const tokenResponse = await axios({
-      method: 'post',
-      url: 'https://accounts.spotify.com/api/token',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + Buffer.from(
-          getEnv('SPOTIFY_CLIENT_ID') + ':' + getEnv('SPOTIFY_CLIENT_SECRET')
-        ).toString('base64')
-      },
-      data: querystring.stringify({
-        code: code,
-        redirect_uri: getEnv('REDIRECT_URI'),
-        grant_type: 'authorization_code'
-      })
-    });
-    
-    const { access_token, refresh_token, expires_in } = tokenResponse.data;
+    // Exchange authorization code for tokens
+    const tokenResponse = await spotifyApi.exchangeCodeForTokens(code as string);
+    const { access_token, refresh_token, expires_in } = tokenResponse;
     
     // Get user profile from Spotify
-    const spotifyApi = new SpotifyApi(access_token);
-    const profile = await spotifyApi.getCurrentUserProfile();
+    const spotifyProfile = await spotifyApi.getUserProfile(access_token);
     
-    // Check if user exists in our database
-    let user = await storage.getUserBySpotifyId(profile.id);
+    // Check if user with this Spotify ID already exists
+    let user = await storage.getUserBySpotifyId(spotifyProfile.id);
     
-    if (!user) {
-      // Create new user
-      user = await storage.createUser({
-        username: profile.id,
-        password: 'spotify-auth-' + Math.random().toString(36).substring(2, 15), // Placeholder password
-        displayName: profile.display_name,
-        email: profile.email,
-        birthday: null,
-        spotifyId: profile.id,
-        accessToken: access_token,
-        refreshToken: refresh_token
-      });
-      
-      console.log('Created new user:', user.id);
-    } else {
-      // Update existing user's tokens
-      user = await storage.updateUser(user.id, {
-        accessToken: access_token,
-        refreshToken: refresh_token,
-        displayName: profile.display_name,
-        email: profile.email
-      }) || user;
-      
-      console.log('Updated user:', user.id);
+    // Calculate token expiration time
+    const tokenExpiresAt = new Date();
+    tokenExpiresAt.setSeconds(tokenExpiresAt.getSeconds() + expires_in);
+    
+    // Parse state if it exists to get the userId for account connection
+    let existingUserId: number | undefined;
+    if (state) {
+      try {
+        const stateData = JSON.parse(state as string);
+        existingUserId = stateData.userId;
+      } catch (e) {
+        console.error('Error parsing state parameter:', e);
+      }
     }
     
-    // Store user ID in session
+    if (existingUserId) {
+      // Connect Spotify to existing account
+      const existingUser = await storage.getUser(existingUserId);
+      
+      if (existingUser) {
+        user = await storage.updateUser(existingUser.id, {
+          spotifyId: spotifyProfile.id,
+          spotifyAccessToken: access_token,
+          spotifyRefreshToken: refresh_token,
+          spotifyTokenExpiresAt: tokenExpiresAt,
+          name: spotifyProfile.display_name || existingUser.name,
+          email: spotifyProfile.email || existingUser.email,
+          profileImageUrl: spotifyProfile.images?.[0]?.url || existingUser.profileImageUrl,
+        });
+      }
+    } else if (!user) {
+      // Create new user with Spotify data
+      user = await storage.createUser({
+        username: `user_${Date.now()}`,
+        password: '', // No password for Spotify users
+        name: spotifyProfile.display_name || 'Spotify User',
+        email: spotifyProfile.email || '',
+        phone: '',
+        spotifyId: spotifyProfile.id,
+        spotifyAccessToken: access_token,
+        spotifyRefreshToken: refresh_token,
+        spotifyTokenExpiresAt: tokenExpiresAt,
+        profileImageUrl: spotifyProfile.images?.[0]?.url || null,
+        emailVerified: spotifyProfile.email ? true : false, // Trust Spotify's email verification
+        phoneVerified: false,
+        notificationsEnabled: true,
+      });
+    } else {
+      // Update existing user with new Spotify tokens
+      user = await storage.updateUser(user.id, {
+        spotifyAccessToken: access_token,
+        spotifyRefreshToken: refresh_token,
+        spotifyTokenExpiresAt: tokenExpiresAt,
+        name: spotifyProfile.display_name || user.name,
+        email: spotifyProfile.email || user.email,
+        profileImageUrl: spotifyProfile.images?.[0]?.url || user.profileImageUrl,
+      });
+    }
+    
+    // Set user session
     req.session.userId = user.id;
     
-    // Redirect to frontend success page
-    res.redirect('/auth-success?userId=' + user.id);
+    // Redirect to auth success page
+    res.redirect(`/auth-success?userId=${user.id}`);
   } catch (error) {
-    console.error('Error in callback:', error);
-    res.status(500).json({ message: 'Error completing authentication' });
+    console.error('Error handling Spotify callback:', error);
+    res.status(500).json({ error: 'Failed to complete Spotify authentication' });
   }
 };
 
 /**
- * Refreshes an expired access token using the refresh token
+ * Refreshes an expired Spotify access token
+ * @route POST /api/auth/spotify/refresh
  */
-export const refreshToken = async (req: Request, res: Response) => {
+export const refreshSpotifyToken = async (req: Request, res: Response) => {
   try {
-    const { refresh_token } = req.body;
-    
-    if (!refresh_token) {
-      return res.status(400).json({ message: 'Refresh token is required' });
+    // Check if user is authenticated
+    if (!req.session.userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
     }
     
-    // Refresh the token
-    const tokenData = await SpotifyApi.refreshAccessToken(refresh_token);
+    // Get current user
+    const user = await storage.getUser(req.session.userId);
     
-    // If user ID is in the session, update the stored tokens
-    if (req.session.userId) {
-      const user = await storage.getUser(req.session.userId);
-      if (user) {
-        await storage.updateUser(user.id, {
-          accessToken: tokenData.access_token
-        });
-      }
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
+    
+    if (!user.spotifyRefreshToken) {
+      return res.status(400).json({ error: 'No refresh token available' });
+    }
+    
+    // Refresh token
+    const refreshResponse = await spotifyApi.refreshAccessToken(user.spotifyRefreshToken);
+    const { access_token, expires_in } = refreshResponse;
+    
+    // Calculate new expiration time
+    const tokenExpiresAt = new Date();
+    tokenExpiresAt.setSeconds(tokenExpiresAt.getSeconds() + expires_in);
+    
+    // Update user with new token
+    const updatedUser = await storage.updateUser(user.id, {
+      spotifyAccessToken: access_token,
+      spotifyTokenExpiresAt: tokenExpiresAt,
+    });
     
     res.status(200).json({
-      access_token: tokenData.access_token,
-      expires_in: tokenData.expires_in
+      access_token,
+      expires_at: tokenExpiresAt,
     });
   } catch (error) {
-    console.error('Error refreshing token:', error);
-    res.status(500).json({ message: 'Error refreshing token' });
+    console.error('Error refreshing Spotify token:', error);
+    res.status(500).json({ error: 'Failed to refresh Spotify token' });
+  }
+};
+
+/**
+ * Logs out the user by clearing the session
+ * @route POST /api/auth/logout
+ */
+export const logout = (req: Request, res: Response) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+      return res.status(500).json({ error: 'Failed to logout' });
+    }
+    
+    res.status(200).json({ message: 'Logged out successfully' });
+  });
+};
+
+/**
+ * Returns the current authenticated user's data
+ * @route GET /api/auth/me
+ */
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    // Check if user is authenticated
+    if (!req.session.userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    // Get current user
+    const user = await storage.getUser(req.session.userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Remove sensitive fields
+    const { password, spotifyAccessToken, spotifyRefreshToken, ...userWithoutSensitiveData } = user;
+    
+    res.status(200).json(userWithoutSensitiveData);
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    res.status(500).json({ error: 'Failed to get current user' });
+  }
+};
+
+/**
+ * Register a new user via phone verification
+ * @route POST /api/auth/register
+ */
+export const register = async (req: Request, res: Response) => {
+  try {
+    // Validate request body
+    const validationResult = insertUserSchema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        error: 'Invalid user data', 
+        details: validationResult.error.format() 
+      });
+    }
+    
+    const userData = validationResult.data;
+    
+    // Check if user with this phone already exists
+    const existingUserByPhone = userData.phone 
+      ? await storage.getUserByPhone(userData.phone) 
+      : null;
+    
+    if (existingUserByPhone) {
+      return res.status(400).json({ error: 'Phone number already registered' });
+    }
+    
+    // Check if user with this email already exists
+    const existingUserByEmail = userData.email 
+      ? await storage.getUserByEmail(userData.email) 
+      : null;
+    
+    if (existingUserByEmail) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    
+    // Create user
+    const user = await storage.createUser(userData);
+    
+    // Set session
+    req.session.userId = user.id;
+    
+    // Send verification code for phone
+    if (userData.phone) {
+      await sendVerificationCode(req, res);
+    }
+    
+    // Remove sensitive data before sending response
+    const { password, ...userWithoutPassword } = user;
+    
+    res.status(201).json(userWithoutPassword);
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ error: 'Failed to register user' });
+  }
+};
+
+/**
+ * Login with username/phone and password
+ * @route POST /api/auth/login
+ */
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { username, phone, password } = req.body;
+    
+    if ((!username && !phone) || !password) {
+      return res.status(400).json({ error: 'Username/phone and password are required' });
+    }
+    
+    // Find user by username or phone
+    let user;
+    if (username) {
+      user = await storage.getUserByUsername(username);
+    } else if (phone) {
+      user = await storage.getUserByPhone(phone);
+    }
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Check password
+    // In a real app, we'd use bcrypt or similar to compare hashed passwords
+    if (user.password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Set session
+    req.session.userId = user.id;
+    
+    // Remove sensitive data before sending response
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.status(200).json(userWithoutPassword);
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ error: 'Failed to login' });
   }
 };
