@@ -12,7 +12,7 @@ const testUser = {
 };
 
 // Base URL for API requests
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 // Directly patch the user record to set phoneVerified flag
 // This is for testing only and bypasses the phone verification flow

@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const axios = require('axios');
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://localhost:5000';
 
 // Update a user with specific details for testing purposes
 async function updateUserDirectly(userId, updateData) {
