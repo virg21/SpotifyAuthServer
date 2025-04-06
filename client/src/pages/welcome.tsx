@@ -51,7 +51,7 @@ const WelcomePage: React.FC = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ phoneNumber: formattedPhone })
+        body: JSON.stringify({ phone: formattedPhone })
       });
       
       const data = await response.json();

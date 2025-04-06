@@ -19,7 +19,7 @@ export const users = pgTable("users", {
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   notificationsEnabled: boolean("notifications_enabled").default(false),
-  phone: text("phone_number"), // Using consistent naming with the controller
+  phone: text("phone"), // Using consistent naming with the schema
   phoneVerified: boolean("phone_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
