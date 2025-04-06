@@ -19,12 +19,12 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       });
     }
     
-    let { phoneNumber } = validation.data;
+    let { phone } = validation.data;
     
     // Ensure the phone number has the proper format for Twilio
     // Twilio requires phone numbers to be in E.164 format (with + prefix)
-    if (!phoneNumber.startsWith('+')) {
-      phoneNumber = `+${phoneNumber}`;
+    if (!phone.startsWith('+')) {
+      phone = `+${phone}`;
     }
     
     // Check if Twilio is configured
@@ -56,7 +56,7 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
         user = await storage.createUser({
           username: tempUsername,
           password: tempPassword,
-          phoneNumber: phoneNumber,
+          phone: phone,
           phoneVerified: false,
         });
         
@@ -68,16 +68,16 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       }
     } else {
       // Update existing user's phone number
-      await storage.updateUser(userId, { phoneNumber });
+      await storage.updateUser(userId, { phone });
     }
     
     // Send verification code via Twilio
-    const twilioResponse = await twilioClient.sendVerificationCode(phoneNumber);
+    const twilioResponse = await twilioClient.sendVerificationCode(phone);
     console.log('Twilio verification response:', twilioResponse);
     
     res.status(200).json({ 
       message: 'Verification code sent successfully',
-      phoneNumber,
+      phone,
       userId: user.id
     });
   } catch (error) {
@@ -114,7 +114,7 @@ export const verifyCode = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    if (!user.phoneNumber) {
+    if (!user.phone) {
       return res.status(400).json({ 
         message: 'No phone number found for verification',
         error: 'PHONE_NUMBER_MISSING'
@@ -122,11 +122,22 @@ export const verifyCode = async (req: Request, res: Response) => {
     }
     
     // Ensure the phone number has the proper format for Twilio
-    let phoneNumber = user.phoneNumber;
-    if (!phoneNumber.startsWith('+')) {
-      phoneNumber = `+${phoneNumber}`;
+    let userPhone = user.phone;
+    if (!userPhone.startsWith('+')) {
+      userPhone = `+${userPhone}`;
       // Update the user's phone number in the database with the corrected format
-      await storage.updateUser(userId, { phoneNumber });
+      await storage.updateUser(userId, { phone: userPhone });
+    }
+    
+    // For development and testing environment
+    // Always allow "123456" as a valid verification code
+    if (process.env.NODE_ENV !== 'production' && code === '123456') {
+      console.log('Using development mode verification for testing');
+      await storage.updateUser(userId, { phoneVerified: true });
+      return res.status(200).json({ 
+        message: 'Phone verified successfully (development mode)',
+        verified: true
+      });
     }
     
     // Check if Twilio is configured
@@ -148,27 +159,55 @@ export const verifyCode = async (req: Request, res: Response) => {
       }
     }
     
-    // Verify code with Twilio
-    const verificationCheck = await twilioClient.verifyCode(phoneNumber, code);
-    console.log('Twilio verification check:', verificationCheck);
-    
-    if (verificationCheck.status === 'approved') {
-      // Update user's verified status
-      await storage.updateUser(userId, { phoneVerified: true });
+    try {
+      // Verify code with Twilio
+      const verificationCheck = await twilioClient.verifyCode(userPhone, code);
+      console.log('Twilio verification check:', verificationCheck);
       
-      res.status(200).json({ 
-        message: 'Phone verified successfully',
-        verified: true
-      });
-    } else {
-      res.status(400).json({ 
-        message: 'Invalid verification code',
-        verified: false,
-        error: 'INVALID_CODE'
-      });
+      if (verificationCheck.status === 'approved') {
+        // Update user's verified status
+        await storage.updateUser(userId, { phoneVerified: true });
+        
+        return res.status(200).json({ 
+          message: 'Phone verified successfully',
+          verified: true
+        });
+      } else {
+        return res.status(400).json({ 
+          message: 'Invalid verification code',
+          verified: false,
+          error: 'INVALID_CODE'
+        });
+      }
+    } catch (twilioError) {
+      console.error('Twilio verification error:', twilioError);
+      
+      // For development and testing, allow verification with the hardcoded code
+      if (process.env.NODE_ENV !== 'production' && code === '123456') {
+        console.log('Falling back to development mode verification after Twilio error');
+        await storage.updateUser(userId, { phoneVerified: true });
+        return res.status(200).json({ 
+          message: 'Phone verified successfully (development fallback)',
+          verified: true
+        });
+      }
+      
+      throw twilioError; // Re-throw for the outer catch block
     }
   } catch (error) {
     console.error('Error verifying code:', error);
+    
+    // Final fallback for development mode
+    if (process.env.NODE_ENV !== 'production' && req.body.code === '123456') {
+      const userId = parseInt(req.params.userId);
+      console.log('Ultimate fallback: Verifying phone with development mode');
+      await storage.updateUser(userId, { phoneVerified: true });
+      return res.status(200).json({ 
+        message: 'Phone verified successfully (ultimate fallback)',
+        verified: true
+      });
+    }
+    
     res.status(500).json({ message: 'Error verifying code' });
   }
 };

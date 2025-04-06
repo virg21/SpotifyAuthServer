@@ -13,10 +13,13 @@ export const users = pgTable("users", {
   spotifyId: text("spotify_id").unique(),
   spotifyAccessToken: text("spotify_access_token"),
   spotifyRefreshToken: text("spotify_refresh_token"),
+  spotifyVerified: boolean("spotify_verified").default(false), // New field to track if Spotify auth is completed
+  profileImage: text("profile_image"), // Profile image URL (can be from Spotify)
+  preferredGenres: jsonb("preferred_genres").default([]), // User's manually set preferred genres
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   notificationsEnabled: boolean("notifications_enabled").default(false),
-  phoneNumber: text("phone_number"),
+  phone: text("phone_number"), // Using consistent naming with the controller
   phoneVerified: boolean("phone_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -84,7 +87,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   spotifyId: true,
   spotifyAccessToken: true,
   spotifyRefreshToken: true,
-  phoneNumber: true,
+  spotifyVerified: true,
+  profileImage: true,
+  preferredGenres: true,
+  phone: true,
   phoneVerified: true,
   notificationsEnabled: true,
 });
@@ -93,7 +99,9 @@ export const updateUserProfileSchema = z.object({
   displayName: z.string().optional(),
   email: z.string().email().optional(),
   birthday: z.string().optional(),
-  phoneNumber: z.string().optional(),
+  phone: z.string().optional(),
+  profileImage: z.string().optional(),
+  preferredGenres: z.array(z.string()).optional(),
 });
 
 export const updateUserLocationSchema = z.object({
@@ -106,11 +114,12 @@ export const updateNotificationsSchema = z.object({
 });
 
 export const verifyPhoneSchema = z.object({
-  phoneNumber: z.string(),
+  phone: z.string(),
 });
 
 export const verifyCodeSchema = z.object({
   code: z.string(),
+  phone: z.string().optional(),
   email: z.string().email().optional(),
 });
 

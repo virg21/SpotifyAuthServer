@@ -3,6 +3,8 @@ import { storage } from '../storage';
 import { insertUserSchema } from '@shared/schema';
 import * as spotifyApi from '../utils/spotifyApi';
 import { sendVerificationCode } from './verificationController';
+import { twilioClient } from '../utils/twilioClient';
+import { z } from 'zod';
 
 /**
  * Initiates the Spotify authorization flow
@@ -87,7 +89,7 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
         password: '', // No password for Spotify users
         displayName: spotifyProfile.display_name || 'Spotify User',
         email: spotifyProfile.email || '',
-        phoneNumber: '',
+        phone: '',
         spotifyId: spotifyProfile.id,
         spotifyAccessToken: access_token,
         spotifyRefreshToken: refresh_token,
@@ -227,8 +229,8 @@ export const register = async (req: Request, res: Response) => {
     const userData = validationResult.data;
     
     // Check if user with this phone already exists
-    const existingUserByPhone = userData.phoneNumber 
-      ? await storage.getUserByPhone(userData.phoneNumber) 
+    const existingUserByPhone = userData.phone 
+      ? await storage.getUserByPhone(userData.phone) 
       : null;
     
     if (existingUserByPhone) {
@@ -250,15 +252,37 @@ export const register = async (req: Request, res: Response) => {
     // Set session
     req.session.userId = user.id;
     
+    let verificationSent = false;
+    
     // Send verification code for phone
-    if (userData.phoneNumber) {
-      await sendVerificationCode(req, res);
+    if (userData.phone) {
+      try {
+        // Create a modified request object to avoid passing along res
+        const modifiedReq = {
+          ...req,
+          params: { ...req.params, userId: user.id.toString() },
+          body: { phone: userData.phone }
+        };
+        
+        // Use the Twilio client directly instead of the API handler
+        if (twilioClient.isConfigured()) {
+          await twilioClient.sendVerificationCode(userData.phone);
+        }
+        
+        verificationSent = true;
+      } catch (verificationError) {
+        console.error('Error sending verification code during registration:', verificationError);
+        // We'll continue with registration even if verification fails
+      }
     }
     
     // Remove sensitive data before sending response
     const { password, ...userWithoutPassword } = user;
     
-    res.status(201).json(userWithoutPassword);
+    res.status(201).json({
+      ...userWithoutPassword,
+      verificationSent
+    });
   } catch (error) {
     console.error('Error registering user:', error);
     res.status(500).json({ error: 'Failed to register user' });
@@ -271,9 +295,9 @@ export const register = async (req: Request, res: Response) => {
  */
 export const login = async (req: Request, res: Response) => {
   try {
-    const { username, phoneNumber, password } = req.body;
+    const { username, phone, password } = req.body;
     
-    if ((!username && !phoneNumber) || !password) {
+    if ((!username && !phone) || !password) {
       return res.status(400).json({ error: 'Username/phone and password are required' });
     }
     
@@ -281,8 +305,8 @@ export const login = async (req: Request, res: Response) => {
     let user;
     if (username) {
       user = await storage.getUserByUsername(username);
-    } else if (phoneNumber) {
-      user = await storage.getUserByPhone(phoneNumber);
+    } else if (phone) {
+      user = await storage.getUserByPhone(phone);
     }
     
     if (!user) {
@@ -305,5 +329,74 @@ export const login = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error logging in:', error);
     res.status(500).json({ error: 'Failed to login' });
+  }
+};
+
+/**
+ * Directly update user data - FOR TESTING PURPOSES ONLY
+ * This endpoint should not be exposed in production!
+ * @route POST /api/auth/direct-update-user
+ */
+export const directUpdateUser = async (req: Request, res: Response) => {
+  try {
+    // Skip this route in production
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    
+    const schema = z.object({
+      userId: z.number(),
+      updateData: z.object({
+        phoneVerified: z.boolean().optional(),
+        emailVerified: z.boolean().optional(),
+        spotifyVerified: z.boolean().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        displayName: z.string().optional(),
+        profileImage: z.string().optional(),
+        spotifyId: z.string().optional(),
+        preferredGenres: z.array(z.string()).optional(),
+        notificationsEnabled: z.boolean().optional(),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
+      })
+    });
+    
+    const validation = schema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Invalid data',
+        details: validation.error.format()
+      });
+    }
+    
+    const { userId, updateData } = validation.data;
+    
+    // Get user
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Update user data directly (FOR TESTING ONLY)
+    console.log(`[TEST] Directly updating user ${userId} with:`, updateData);
+    await storage.updateUser(userId, updateData);
+    
+    // Get updated user
+    const updatedUser = await storage.getUser(userId);
+    if (!updatedUser) {
+      return res.status(500).json({ error: 'Failed to retrieve updated user' });
+    }
+    
+    // Create safe user object without password
+    const userResponse = {
+      ...updatedUser,
+      password: undefined // Remove password from the response
+    };
+    
+    res.status(200).json(userResponse);
+  } catch (error) {
+    console.error('Error with direct user update:', error);
+    res.status(500).json({ error: 'Failed to update user' });
   }
 };

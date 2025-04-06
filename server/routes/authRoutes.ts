@@ -19,4 +19,9 @@ router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 router.get('/me', authController.getCurrentUser);
 
+// Testing utility route - NOT FOR PRODUCTION
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/direct-update-user', authController.directUpdateUser);
+}
+
 export default router;
