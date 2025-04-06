@@ -19,9 +19,10 @@ router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 router.get('/me', authController.getCurrentUser);
 
-// Testing utility route - NOT FOR PRODUCTION
+// Testing utility routes - NOT FOR PRODUCTION
 if (process.env.NODE_ENV !== 'production') {
   router.post('/direct-update-user', authController.directUpdateUser);
+  router.get('/test-spotify-connectivity', authController.testSpotifyConnectivity);
 }
 
 export default router;

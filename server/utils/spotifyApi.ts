@@ -9,25 +9,55 @@ const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
 const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
 // Get Spotify credentials from environment variables
-const getSpotifyCredentials = () => {
+export const getSpotifyCredentials = () => {
   const clientId = getEnv('SPOTIFY_CLIENT_ID');
   const clientSecret = getEnv('SPOTIFY_CLIENT_SECRET', false) || 'development_secret';
-  // Try first SPOTIFY_REDIRECT_URI, then fall back to REDIRECT_URI for compatibility
+  
+  // Try various options for the redirect URI to increase chances of success
   let redirectUri;
+  
+  // First check environment variables (most reliable)
   try {
-    redirectUri = getEnv('SPOTIFY_REDIRECT_URI', false);
+    redirectUri = process.env.REDIRECT_URI || process.env.SPOTIFY_REDIRECT_URI;
   } catch (e) {
-    redirectUri = getEnv('REDIRECT_URI', false) || 'http://localhost:5000/api/auth/spotify/callback';
+    console.log('No redirect URI found in environment variables');
   }
   
-  // Handle Replit environment variables in redirect URI
-  if (redirectUri && redirectUri.includes('${')) {
-    redirectUri = redirectUri.replace(/\${REPL_SLUG}/g, process.env.REPL_SLUG || 'workspace');
-    redirectUri = redirectUri.replace(/\${REPL_OWNER}/g, process.env.REPL_OWNER || 'replit');
-    console.log('Expanded Replit variables in redirect URI:', redirectUri);
+  // If we don't have a redirect URI yet, use the one from the Replit environment
+  if (!redirectUri) {
+    // Get the Replit domain
+    const replSlug = process.env.REPL_SLUG || 'workspace';
+    const replOwner = process.env.REPL_OWNER || 'vliste415';
+    
+    // Try several possible formats to increase chances of success
+    redirectUri = `https://${replSlug}.${replOwner}.repl.co/api/auth/spotify/callback`;
+    
+    // Hardcoded fallback for the exact format registered in Spotify Dashboard
+    const fallbackUri = 'https://workspace.vliste415.repl.co/api/auth/spotify/callback';
+    
+    // Log all the options we've tried
+    console.log('Tried redirect URIs:', {
+      fromEnv: process.env.REDIRECT_URI || process.env.SPOTIFY_REDIRECT_URI,
+      constructed: redirectUri,
+      fallback: fallbackUri
+    });
+    
+    // Use the fallback since we know it matches what's in the Spotify Dashboard
+    redirectUri = fallbackUri;
   }
+  
+  // Log detailed environment information to help with debugging
+  console.log('Environment info:', {
+    NODE_ENV: process.env.NODE_ENV,
+    REPL_SLUG: process.env.REPL_SLUG,
+    REPL_OWNER: process.env.REPL_OWNER,
+    REPL_ID: process.env.REPL_ID
+  });
   
   console.log('Spotify credentials:', { clientId, clientSecret: '***HIDDEN***', redirectUri });
+  console.log('IMPORTANT: Make sure this exact URI is registered in your Spotify Developer Dashboard:');
+  console.log(redirectUri);
+  
   return { clientId, clientSecret, redirectUri };
 };
 

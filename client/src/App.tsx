@@ -12,6 +12,7 @@ import AuthSuccess from "@/pages/auth-success";
 import WelcomePage from "@/pages/welcome";
 import AnalyzingMusicPage from "@/pages/analyzing-music";
 import VerifyEmail from "@/pages/VerifyEmail";
+import SpotifyTroubleshooter from "@/pages/spotify-troubleshooter";
 import Navigation from "@/components/navigation";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/auth-success" component={AuthSuccess} />
       <Route path="/analyzing-music" component={AnalyzingMusicPage} />
       <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/spotify-troubleshooter" component={SpotifyTroubleshooter} />
       {/* Future routes */}
       {/* <Route path="/api-routes" component={ApiRoutes} /> */}
       {/* <Route path="/users" component={Users} /> */}
