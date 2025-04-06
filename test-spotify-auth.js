@@ -19,7 +19,12 @@ async function testSpotifyAuth() {
     console.log('Testing Spotify authentication flow...');
     
     // 1. Fetch the login URL
-    const response = await axios.get('http://localhost:5000/api/auth/spotify/login', { 
+    // For testing in Replit, we'll use localhost
+    const baseUrl = 'http://localhost:5000';
+    
+    console.log(`Using base URL: ${baseUrl}`);
+    
+    const response = await axios.get(`${baseUrl}/api/auth/spotify/login`, { 
       maxRedirects: 0,
       validateStatus: status => status === 302 // We expect a redirect
     });

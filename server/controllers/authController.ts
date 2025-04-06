@@ -8,8 +8,7 @@ import { z } from 'zod';
 
 /**
  * Initiates the Spotify authorization flow
- * In development mode, directly redirects to the callback with a mock code
- * In production, redirects to Spotify's authorization page
+ * Redirects to Spotify's authorization page
  * @route GET /api/auth/spotify/login
  */
 export const initiateSpotifyLogin = (req: Request, res: Response) => {
@@ -20,21 +19,12 @@ export const initiateSpotifyLogin = (req: Request, res: Response) => {
     // Generate state parameter to include the userId for connecting accounts later
     const state = userId ? JSON.stringify({ userId }) : JSON.stringify({ userId: 0 });
     
-    // In Replit environment, directly redirect to callback with mock code to avoid Spotify connection issues
-    console.log('Using development mode for Spotify auth - bypassing Spotify login page');
-    const mockCode = 'mock_code_' + Date.now();
-    const redirectUrl = `/api/auth/spotify/callback?code=${mockCode}&state=${encodeURIComponent(state)}`;
-    
-    // Redirect directly to our callback endpoint
-    res.redirect(redirectUrl);
-    
-    /* Commented out actual Spotify auth flow for Replit environment
     // Get authorization URL from Spotify API utils
     const authUrl = spotifyApi.getAuthorizationUrl(state);
+    console.log('Redirecting to Spotify authorization URL');
     
     // Redirect to Spotify authorization page
     res.redirect(authUrl);
-    */
   } catch (error) {
     console.error('Error initiating Spotify login:', error);
     res.status(500).json({ error: 'Failed to initiate Spotify login' });
