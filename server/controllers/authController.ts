@@ -76,10 +76,8 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
           spotifyId: spotifyProfile.id,
           spotifyAccessToken: access_token,
           spotifyRefreshToken: refresh_token,
-          spotifyTokenExpiresAt: tokenExpiresAt,
-          name: spotifyProfile.display_name || existingUser.name,
+          displayName: spotifyProfile.display_name || existingUser.displayName,
           email: spotifyProfile.email || existingUser.email,
-          profileImageUrl: spotifyProfile.images?.[0]?.url || existingUser.profileImageUrl,
         });
       }
     } else if (!user) {
@@ -87,14 +85,12 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
       user = await storage.createUser({
         username: `user_${Date.now()}`,
         password: '', // No password for Spotify users
-        name: spotifyProfile.display_name || 'Spotify User',
+        displayName: spotifyProfile.display_name || 'Spotify User',
         email: spotifyProfile.email || '',
-        phone: '',
+        phoneNumber: '',
         spotifyId: spotifyProfile.id,
         spotifyAccessToken: access_token,
         spotifyRefreshToken: refresh_token,
-        spotifyTokenExpiresAt: tokenExpiresAt,
-        profileImageUrl: spotifyProfile.images?.[0]?.url || null,
         emailVerified: spotifyProfile.email ? true : false, // Trust Spotify's email verification
         phoneVerified: false,
         notificationsEnabled: true,
@@ -104,14 +100,16 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
       user = await storage.updateUser(user.id, {
         spotifyAccessToken: access_token,
         spotifyRefreshToken: refresh_token,
-        spotifyTokenExpiresAt: tokenExpiresAt,
-        name: spotifyProfile.display_name || user.name,
+        displayName: spotifyProfile.display_name || user.displayName,
         email: spotifyProfile.email || user.email,
-        profileImageUrl: spotifyProfile.images?.[0]?.url || user.profileImageUrl,
       });
     }
     
     // Set user session
+    if (!user) {
+      return res.status(500).json({ error: 'Failed to create or update user' });
+    }
+    
     req.session.userId = user.id;
     
     // Redirect to auth success page
@@ -155,7 +153,6 @@ export const refreshSpotifyToken = async (req: Request, res: Response) => {
     // Update user with new token
     const updatedUser = await storage.updateUser(user.id, {
       spotifyAccessToken: access_token,
-      spotifyTokenExpiresAt: tokenExpiresAt,
     });
     
     res.status(200).json({
@@ -230,8 +227,8 @@ export const register = async (req: Request, res: Response) => {
     const userData = validationResult.data;
     
     // Check if user with this phone already exists
-    const existingUserByPhone = userData.phone 
-      ? await storage.getUserByPhone(userData.phone) 
+    const existingUserByPhone = userData.phoneNumber 
+      ? await storage.getUserByPhone(userData.phoneNumber) 
       : null;
     
     if (existingUserByPhone) {
@@ -254,7 +251,7 @@ export const register = async (req: Request, res: Response) => {
     req.session.userId = user.id;
     
     // Send verification code for phone
-    if (userData.phone) {
+    if (userData.phoneNumber) {
       await sendVerificationCode(req, res);
     }
     
@@ -274,9 +271,9 @@ export const register = async (req: Request, res: Response) => {
  */
 export const login = async (req: Request, res: Response) => {
   try {
-    const { username, phone, password } = req.body;
+    const { username, phoneNumber, password } = req.body;
     
-    if ((!username && !phone) || !password) {
+    if ((!username && !phoneNumber) || !password) {
       return res.status(400).json({ error: 'Username/phone and password are required' });
     }
     
@@ -284,8 +281,8 @@ export const login = async (req: Request, res: Response) => {
     let user;
     if (username) {
       user = await storage.getUserByUsername(username);
-    } else if (phone) {
-      user = await storage.getUserByPhone(phone);
+    } else if (phoneNumber) {
+      user = await storage.getUserByPhone(phoneNumber);
     }
     
     if (!user) {
