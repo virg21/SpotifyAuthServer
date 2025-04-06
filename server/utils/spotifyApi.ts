@@ -12,7 +12,7 @@ const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 const getSpotifyCredentials = () => {
   const clientId = getEnv('SPOTIFY_CLIENT_ID');
   const clientSecret = getEnv('SPOTIFY_CLIENT_SECRET', false) || 'development_secret';
-  const redirectUri = getEnv('REDIRECT_URI', false) || 'http://localhost:3000/auth-success';
+  const redirectUri = getEnv('REDIRECT_URI', false) || 'http://localhost:5000/api/auth/spotify/callback';
   
   return { clientId, clientSecret, redirectUri };
 };
