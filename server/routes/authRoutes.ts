@@ -23,6 +23,7 @@ router.get('/me', authController.getCurrentUser);
 if (process.env.NODE_ENV !== 'production') {
   router.post('/direct-update-user', authController.directUpdateUser);
   router.get('/test-spotify-connectivity', authController.testSpotifyConnectivity);
+  router.get('/spotify/login-url', authController.getSpotifyLoginUrl);
 }
 
 export default router;

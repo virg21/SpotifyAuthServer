@@ -13,37 +13,20 @@ export const getSpotifyCredentials = () => {
   const clientId = getEnv('SPOTIFY_CLIENT_ID');
   const clientSecret = getEnv('SPOTIFY_CLIENT_SECRET', false) || 'development_secret';
   
-  // Try various options for the redirect URI to increase chances of success
-  let redirectUri;
+  // ALWAYS use the exact URI registered in the Spotify Developer Dashboard
+  // This must match *exactly*, including the protocol, domain, and path
+  const redirectUri = 'https://workspace.vliste415.repl.co/api/auth/spotify/callback';
   
-  // First check environment variables (most reliable)
-  try {
-    redirectUri = process.env.REDIRECT_URI || process.env.SPOTIFY_REDIRECT_URI;
-  } catch (e) {
-    console.log('No redirect URI found in environment variables');
-  }
+  // Log that we're using the hardcoded URI
+  console.log('Using hardcoded Spotify redirect URI:', redirectUri);
+  console.log('This URI *must* be registered in your Spotify Developer Dashboard');
   
-  // If we don't have a redirect URI yet, use the one from the Replit environment
-  if (!redirectUri) {
-    // Get the Replit domain
-    const replSlug = process.env.REPL_SLUG || 'workspace';
-    const replOwner = process.env.REPL_OWNER || 'vliste415';
-    
-    // Try several possible formats to increase chances of success
-    redirectUri = `https://${replSlug}.${replOwner}.repl.co/api/auth/spotify/callback`;
-    
-    // Hardcoded fallback for the exact format registered in Spotify Dashboard
-    const fallbackUri = 'https://workspace.vliste415.repl.co/api/auth/spotify/callback';
-    
-    // Log all the options we've tried
-    console.log('Tried redirect URIs:', {
-      fromEnv: process.env.REDIRECT_URI || process.env.SPOTIFY_REDIRECT_URI,
-      constructed: redirectUri,
-      fallback: fallbackUri
-    });
-    
-    // Use the fallback since we know it matches what's in the Spotify Dashboard
-    redirectUri = fallbackUri;
+  // Verify it matches environment variables (for debugging only)
+  if (process.env.REDIRECT_URI && process.env.REDIRECT_URI !== redirectUri) {
+    console.warn('WARNING: Environment variable REDIRECT_URI does not match hardcoded value');
+    console.warn('ENV:', process.env.REDIRECT_URI);
+    console.warn('Hardcoded:', redirectUri);
+    console.warn('Using hardcoded value for reliability');
   }
   
   // Log detailed environment information to help with debugging

@@ -397,64 +397,88 @@ export const testSpotifyConnectivity = async (req: Request, res: Response) => {
   try {
     console.log('Testing Spotify API connectivity...');
     
-    // Test basic connectivity to Spotify endpoints
-    const endpoints = [
-      'https://accounts.spotify.com',
-      'https://accounts.spotify.com/api/token',
-      'https://api.spotify.com/v1'
-    ];
-    
-    const results = [];
-    
-    for (const endpoint of endpoints) {
+    // First try connecting to Spotify accounts API
+    try {
+      // Just try to reach the accounts.spotify.com domain with a simple request
+      const accountsResponse = await axios.get('https://accounts.spotify.com/robots.txt', { 
+        timeout: 5000,
+        validateStatus: () => true // Accept any status
+      });
+      console.log('Successfully connected to Spotify accounts API:', accountsResponse.status);
+      
+      // Try the token endpoint with a HEAD request
       try {
-        console.log(`Testing connectivity to ${endpoint}...`);
-        const start = Date.now();
-        const response = await axios.get(endpoint, { 
-          timeout: 10000,
-          validateStatus: () => true // Accept any status code
+        const tokenResponse = await axios.head('https://accounts.spotify.com/api/token', { 
+          timeout: 5000,
+          validateStatus: () => true // Accept any status
         });
-        const time = Date.now() - start;
+        console.log('Successfully connected to Spotify token endpoint:', tokenResponse.status);
         
-        results.push({
-          endpoint,
-          status: response.status,
-          time: `${time}ms`,
-          success: response.status >= 200 && response.status < 400
+        res.json({ 
+          canReachSpotify: true, 
+          accountsStatus: accountsResponse.status,
+          tokenStatus: tokenResponse.status,
+          message: 'Successfully connected to Spotify API endpoints'
         });
+      } catch (tokenError: any) {
+        console.error('Failed to connect to Spotify token endpoint:', tokenError.message);
         
-        console.log(`${endpoint}: Status ${response.status} in ${time}ms`);
-      } catch (error: any) {
-        console.error(`Error connecting to ${endpoint}:`, error.message);
-        results.push({
-          endpoint,
-          status: 'Error',
-          error: error.message,
-          success: false
+        res.json({ 
+          canReachSpotify: true, 
+          accountsStatus: accountsResponse.status,
+          tokenError: tokenError.message,
+          message: 'Connected to Spotify accounts but not to token endpoint'
+        });
+      }
+    } catch (accountsError: any) {
+      console.error('Failed to connect to Spotify accounts API:', accountsError.message);
+      
+      // Check if we have a response
+      if (accountsError.response) {
+        res.json({ 
+          canReachSpotify: true, 
+          accountsStatus: accountsError.response.status,
+          message: 'Connected to Spotify accounts API but received error status',
+          error: accountsError.message
+        });
+      } else if (accountsError.request) {
+        // No response received
+        res.json({ 
+          canReachSpotify: false, 
+          error: 'No response received from Spotify accounts API. This could be a network connectivity issue or a CORS problem.'
+        });
+      } else {
+        // Something else went wrong
+        res.json({ 
+          canReachSpotify: false, 
+          error: 'Error setting up request: ' + accountsError.message
         });
       }
     }
-    
-    // Get the Spotify auth URL for testing
-    const { clientId, redirectUri } = spotifyApi.getSpotifyCredentials();
-    const testAuthUrl = spotifyApi.getAuthorizationUrl('test');
-    
-    return res.status(200).json({
-      message: 'Spotify API connectivity test results',
-      clientId,
-      redirectUri,
-      testAuthUrl,
-      endpoints: results,
-      environment: {
-        NODE_ENV: process.env.NODE_ENV,
-        REPL_SLUG: process.env.REPL_SLUG,
-        REPL_OWNER: process.env.REPL_OWNER,
-        REPL_ID: process.env.REPL_ID
-      }
+  } catch (error: any) {
+    console.error('Spotify connectivity test failed with unexpected error:', error);
+    res.status(500).json({ 
+      canReachSpotify: false, 
+      error: error.message 
     });
-  } catch (error) {
-    console.error('Error testing Spotify connectivity:', error);
-    res.status(500).json({ error: 'Failed to test Spotify connectivity' });
+  }
+};
+
+/**
+ * Return the Spotify login URL without redirecting - FOR TESTING PURPOSES ONLY
+ * @route GET /api/auth/spotify/login-url
+ */
+export const getSpotifyLoginUrl = (req: Request, res: Response) => {
+  try {
+    // Generate and send back the URL
+    const state = JSON.stringify({ userId: req.session.userId || null });
+    const url = spotifyApi.getAuthorizationUrl(state);
+    console.log('Generated Spotify login URL:', url);
+    
+    res.json({ url });
+  } catch (error: any) {
+    console.error('Error generating Spotify login URL:', error);
+    res.status(500).json({ error: error.message });
   }
 };
 
