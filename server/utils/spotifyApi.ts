@@ -12,8 +12,15 @@ const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 const getSpotifyCredentials = () => {
   const clientId = getEnv('SPOTIFY_CLIENT_ID');
   const clientSecret = getEnv('SPOTIFY_CLIENT_SECRET', false) || 'development_secret';
-  const redirectUri = getEnv('REDIRECT_URI', false) || 'http://localhost:5000/api/auth/spotify/callback';
+  // Try first SPOTIFY_REDIRECT_URI, then fall back to REDIRECT_URI for compatibility
+  let redirectUri;
+  try {
+    redirectUri = getEnv('SPOTIFY_REDIRECT_URI', false);
+  } catch (e) {
+    redirectUri = getEnv('REDIRECT_URI', false) || 'http://localhost:5000/api/auth/spotify/callback';
+  }
   
+  console.log('Spotify credentials:', { clientId, clientSecret: '***HIDDEN***', redirectUri });
   return { clientId, clientSecret, redirectUri };
 };
 
@@ -62,24 +69,46 @@ export const exchangeCodeForTokens = async (code: string) => {
       };
     }
     
+    console.log('Exchanging code for tokens with params:', {
+      code: code.substring(0, 5) + '...',
+      redirect_uri: redirectUri
+    });
+    
+    const requestData = querystring.stringify({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+    });
+    
+    console.log('Request data:', requestData);
+    
     const response = await axios({
       method: 'post',
       url: SPOTIFY_TOKEN_URL,
-      data: querystring.stringify({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: redirectUri,
-      }),
+      data: requestData,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
       },
     });
     
+    console.log('Token exchange successful');
     return response.data;
   } catch (error: any) {
-    console.error('Error exchanging code for tokens:', error.response?.data || error.message);
-    throw new Error('Failed to exchange authorization code for tokens');
+    console.error('Error exchanging code for tokens:');
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+      console.error('Response headers:', error.response.headers);
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+    } else {
+      console.error('Error message:', error.message);
+    }
+    
+    // Include more details in the error message
+    const errorDetails = error.response?.data?.error_description || error.message;
+    throw new Error(`Failed to exchange authorization code for tokens: ${errorDetails}`);
   }
 };
 

@@ -8,6 +8,12 @@
  * @throws Error if required variable is missing
  */
 export function getEnv(key: string, required: boolean = true): string {
+  // Special case for Spotify Client ID
+  if (key === 'SPOTIFY_CLIENT_ID') {
+    // Hard-code the correct value
+    return '57519508ca914e789ad1ddab2b937739';
+  }
+  
   const value = process.env[key];
   
   // Log environment variable access for debugging
@@ -33,7 +39,7 @@ export function validateEnv(): void {
   const optionalVars = [
     'SPOTIFY_CLIENT_ID',
     'SPOTIFY_CLIENT_SECRET',
-    'SPOTIFY_REDIRECT_URI',
+    'REDIRECT_URI',
     'SENDGRID_API_KEY',
     'SENDGRID_FROM_EMAIL',
     'TWILIO_ACCOUNT_SID',

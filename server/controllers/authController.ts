@@ -38,18 +38,53 @@ export const initiateSpotifyLogin = (req: Request, res: Response) => {
  */
 export const handleSpotifyCallback = async (req: Request, res: Response) => {
   try {
-    const { code, state } = req.query;
+    console.log('Spotify callback received with query:', {
+      code: req.query.code ? 'PRESENT' : 'MISSING',
+      state: req.query.state,
+      error: req.query.error
+    });
+    
+    const { code, state, error } = req.query;
+    
+    // Check for errors from Spotify
+    if (error) {
+      console.error('Spotify returned an error:', error);
+      return res.status(400).json({ error: `Authentication failed: ${error}` });
+    }
     
     if (!code) {
       return res.status(400).json({ error: 'Authorization code is required' });
     }
     
+    console.log('Processing Spotify callback with code');
+    
     // Exchange authorization code for tokens
-    const tokenResponse = await spotifyApi.exchangeCodeForTokens(code as string);
+    let tokenResponse;
+    try {
+      tokenResponse = await spotifyApi.exchangeCodeForTokens(code as string);
+      console.log('Token exchange successful, received access token');
+    } catch (tokenError: any) {
+      console.error('Failed to exchange code for tokens:', tokenError.message);
+      return res.status(500).json({ 
+        error: 'Failed to exchange code for tokens', 
+        details: tokenError.message 
+      });
+    }
+    
     const { access_token, refresh_token, expires_in } = tokenResponse;
     
     // Get user profile from Spotify
-    const spotifyProfile = await spotifyApi.getUserProfile(access_token);
+    let spotifyProfile;
+    try {
+      spotifyProfile = await spotifyApi.getUserProfile(access_token);
+      console.log('Retrieved Spotify profile for user:', spotifyProfile.id);
+    } catch (profileError: any) {
+      console.error('Failed to get Spotify profile:', profileError.message);
+      return res.status(500).json({ 
+        error: 'Failed to get Spotify user profile', 
+        details: profileError.message 
+      });
+    }
     
     // Check if user with this Spotify ID already exists
     let user = await storage.getUserBySpotifyId(spotifyProfile.id);
@@ -64,46 +99,61 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
       try {
         const stateData = JSON.parse(state as string);
         existingUserId = stateData.userId;
+        console.log('Parsed state parameter, userId:', existingUserId);
       } catch (e) {
         console.error('Error parsing state parameter:', e);
       }
     }
     
-    if (existingUserId) {
-      // Connect Spotify to existing account
-      const existingUser = await storage.getUser(existingUserId);
-      
-      if (existingUser) {
-        user = await storage.updateUser(existingUser.id, {
+    // Logic to create or update user
+    try {
+      if (existingUserId) {
+        // Connect Spotify to existing account
+        const existingUser = await storage.getUser(existingUserId);
+        
+        if (existingUser) {
+          console.log('Updating existing user with Spotify data:', existingUserId);
+          user = await storage.updateUser(existingUser.id, {
+            spotifyId: spotifyProfile.id,
+            spotifyAccessToken: access_token,
+            spotifyRefreshToken: refresh_token,
+            displayName: spotifyProfile.display_name || existingUser.displayName,
+            email: spotifyProfile.email || existingUser.email,
+          });
+        } else {
+          console.log('User ID from state not found:', existingUserId);
+        }
+      } else if (!user) {
+        // Create new user with Spotify data
+        console.log('Creating new user with Spotify data');
+        user = await storage.createUser({
+          username: `user_${Date.now()}`,
+          password: '', // No password for Spotify users
+          displayName: spotifyProfile.display_name || 'Spotify User',
+          email: spotifyProfile.email || '',
+          phone: '',
           spotifyId: spotifyProfile.id,
           spotifyAccessToken: access_token,
           spotifyRefreshToken: refresh_token,
-          displayName: spotifyProfile.display_name || existingUser.displayName,
-          email: spotifyProfile.email || existingUser.email,
+          emailVerified: spotifyProfile.email ? true : false, // Trust Spotify's email verification
+          phoneVerified: false,
+          notificationsEnabled: true,
+        });
+      } else {
+        // Update existing user with new Spotify tokens
+        console.log('Updating existing Spotify user:', user.id);
+        user = await storage.updateUser(user.id, {
+          spotifyAccessToken: access_token,
+          spotifyRefreshToken: refresh_token,
+          displayName: spotifyProfile.display_name || user.displayName,
+          email: spotifyProfile.email || user.email,
         });
       }
-    } else if (!user) {
-      // Create new user with Spotify data
-      user = await storage.createUser({
-        username: `user_${Date.now()}`,
-        password: '', // No password for Spotify users
-        displayName: spotifyProfile.display_name || 'Spotify User',
-        email: spotifyProfile.email || '',
-        phone: '',
-        spotifyId: spotifyProfile.id,
-        spotifyAccessToken: access_token,
-        spotifyRefreshToken: refresh_token,
-        emailVerified: spotifyProfile.email ? true : false, // Trust Spotify's email verification
-        phoneVerified: false,
-        notificationsEnabled: true,
-      });
-    } else {
-      // Update existing user with new Spotify tokens
-      user = await storage.updateUser(user.id, {
-        spotifyAccessToken: access_token,
-        spotifyRefreshToken: refresh_token,
-        displayName: spotifyProfile.display_name || user.displayName,
-        email: spotifyProfile.email || user.email,
+    } catch (userError: any) {
+      console.error('Error creating/updating user:', userError);
+      return res.status(500).json({ 
+        error: 'Failed to create or update user', 
+        details: userError.message 
       });
     }
     
@@ -113,12 +163,17 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
     }
     
     req.session.userId = user.id;
+    console.log('User session set, redirecting to auth success page');
     
     // Redirect to auth success page
     res.redirect(`/auth-success?userId=${user.id}`);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error handling Spotify callback:', error);
-    res.status(500).json({ error: 'Failed to complete Spotify authentication' });
+    const errorDetail = error.message || 'Unknown error';
+    res.status(500).json({ 
+      error: 'Failed to complete Spotify authentication',
+      details: errorDetail
+    });
   }
 };
 
