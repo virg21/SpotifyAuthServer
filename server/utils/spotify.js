@@ -25,10 +25,10 @@ const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 
 // Spotify credentials
-const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
-const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
+const CLIENT_ID = '57519508ca914e789ad1ddab2b937739';
+const CLIENT_SECRET = '18ff12265ce24d689fd438b39d94799a';
 // Make sure to register this exact URI in your Spotify Developer Dashboard
-const REDIRECT_URI = process.env.REDIRECT_URI;
+const REDIRECT_URI = 'https://workspace.vliste415.repl.co/api/auth/callback';
 
 // Log configuration for debugging
 console.log('Spotify Configuration:');
