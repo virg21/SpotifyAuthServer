@@ -20,7 +20,7 @@ router.get('/login', (req, res) => {
 
 /**
  * Route that receives the callback from Spotify after authorization
- * @route GET /api/spotify/callback
+ * @route GET /api/auth/callback
  */
 router.get('/callback', async (req, res) => {
   try {

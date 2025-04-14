@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Mount API routes
-app.use('/api/spotify', spotifyRoutes);
+app.use('/api', spotifyRoutes);
 
 // Serve the main page
 app.get('/', (req, res) => {
@@ -35,7 +35,7 @@ app.get('/success', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Welcome page: http://localhost:${PORT}`);
   console.log(`Callback URL (must match Spotify Dashboard): ${process.env.REDIRECT_URI}`);
