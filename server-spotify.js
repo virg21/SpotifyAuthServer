@@ -8,8 +8,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from the Spotify-specific .env file
+dotenv.config({ path: '.env.spotify' });
+
+// Log environment variables to verify they are loading correctly
+console.log('Environment variables loaded from .env.spotify:');
+console.log('SPOTIFY_CLIENT_ID:', process.env.SPOTIFY_CLIENT_ID ? 'Configured ✓' : 'Missing ✗');
+console.log('SPOTIFY_CLIENT_SECRET:', process.env.SPOTIFY_CLIENT_SECRET ? 'Configured ✓' : 'Missing ✗');
+console.log('REDIRECT_URI:', process.env.REDIRECT_URI);
 
 // Import routes (will convert spotifyRoutes to ESM next)
 import spotifyRoutes from './server/routes/spotifyRoutes.js';

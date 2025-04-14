@@ -2,8 +2,8 @@ import axios from 'axios';
 import querystring from 'querystring';
 import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from the Spotify-specific .env file
+dotenv.config({ path: '.env.spotify' });
 
 // Spotify API endpoints
 const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
