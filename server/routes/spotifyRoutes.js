@@ -23,7 +23,7 @@ router.get('/login', (req, res) => {
  * Route that receives the callback from Spotify after authorization
  * @route GET /api/auth/callback
  */
-router.get('/callback', async (req, res) => {
+router.get('/auth/callback', async (req, res) => {
   try {
     const { code } = req.query;
     
@@ -32,6 +32,7 @@ router.get('/callback', async (req, res) => {
     }
     
     console.log('Received authorization code from Spotify');
+    console.log('Callback URL (actual):', req.protocol + '://' + req.get('host') + req.originalUrl);
     
     // Exchange code for tokens
     const tokens = await spotify.exchangeCodeForTokens(code);
