@@ -1,6 +1,9 @@
-const axios = require('axios');
-const querystring = require('querystring');
-require('dotenv').config();
+import axios from 'axios';
+import querystring from 'querystring';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 // Spotify API endpoints
 const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
@@ -99,7 +102,7 @@ const getUserProfile = async (accessToken) => {
   }
 };
 
-module.exports = {
+export {
   getAuthUrl,
   exchangeCodeForTokens,
   getUserProfile

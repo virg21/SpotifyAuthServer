@@ -1,10 +1,11 @@
-const express = require('express');
+import express from 'express';
+import * as spotify from '../utils/spotify.js';
+
 const router = express.Router();
-const spotify = require('../utils/spotify');
 
 /**
  * Route to redirect user to Spotify's authorization page
- * @route GET /api/spotify/login
+ * @route GET /api/login
  */
 router.get('/login', (req, res) => {
   try {
@@ -73,4 +74,4 @@ router.get('/profile', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
