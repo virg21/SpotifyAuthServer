@@ -58,7 +58,7 @@ router.get('/auth/callback', async (req, res) => {
  * Route to get user profile after successful authentication
  * @route GET /api/spotify/profile
  */
-router.get('/profile', async (req, res) => {
+router.get('/spotify/profile', async (req, res) => {
   try {
     const { access_token } = req.query;
     

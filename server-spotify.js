@@ -8,11 +8,13 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from the Spotify-specific .env file
-dotenv.config({ path: '.env.spotify' });
+// Set environment variables directly from our known values
+process.env.SPOTIFY_CLIENT_ID = '57519508ca914e789ad1ddab2b937739';
+process.env.SPOTIFY_CLIENT_SECRET = '18ff12265ce24d689fd438b39d94799a';
+process.env.REDIRECT_URI = 'https://workspace.vliste415.repl.co/api/auth/callback';
 
-// Log environment variables to verify they are loading correctly
-console.log('Environment variables loaded from .env.spotify:');
+// Log environment variables to verify they are set correctly
+console.log('Environment variables set manually:');
 console.log('SPOTIFY_CLIENT_ID:', process.env.SPOTIFY_CLIENT_ID ? 'Configured ✓' : 'Missing ✗');
 console.log('SPOTIFY_CLIENT_SECRET:', process.env.SPOTIFY_CLIENT_SECRET ? 'Configured ✓' : 'Missing ✗');
 console.log('REDIRECT_URI:', process.env.REDIRECT_URI);

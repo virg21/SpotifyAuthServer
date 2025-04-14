@@ -135,6 +135,7 @@
     // Fetch user profile
     document.getElementById('fetch-profile').addEventListener('click', async () => {
       try {
+        console.log('Fetching profile with access token:', accessToken);
         const response = await fetch(`/api/spotify/profile?access_token=${accessToken}`);
         const data = await response.json();
         

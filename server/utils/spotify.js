@@ -1,9 +1,23 @@
 import axios from 'axios';
 import querystring from 'querystring';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load environment variables from the Spotify-specific .env file
-dotenv.config({ path: '.env.spotify' });
+// Get current file directory in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Set environment variables directly if not already set
+if (!process.env.SPOTIFY_CLIENT_ID) {
+  process.env.SPOTIFY_CLIENT_ID = '57519508ca914e789ad1ddab2b937739';
+}
+if (!process.env.SPOTIFY_CLIENT_SECRET) {
+  process.env.SPOTIFY_CLIENT_SECRET = '18ff12265ce24d689fd438b39d94799a';
+}
+if (!process.env.REDIRECT_URI) {
+  process.env.REDIRECT_URI = 'https://workspace.vliste415.repl.co/api/auth/callback';
+}
 
 // Spotify API endpoints
 const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
