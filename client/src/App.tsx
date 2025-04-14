@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import LoadersDemo from "@/pages/loaders-demo";
 import EventsPage from "@/pages/events";
 import ConnectSpotify from "@/pages/connect-spotify";
+import ConnectSpotifyDirect from "@/pages/connect-spotify-direct";
 import AuthSuccess from "@/pages/auth-success";
 import WelcomePage from "@/pages/welcome";
 import AnalyzingMusicPage from "@/pages/analyzing-music";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/loaders" component={LoadersDemo} />
       <Route path="/events" component={EventsPage} />
       <Route path="/connect-spotify" component={ConnectSpotify} />
+      <Route path="/connect-spotify-direct" component={ConnectSpotifyDirect} />
       <Route path="/auth-success" component={AuthSuccess} />
       <Route path="/analyzing-music" component={AnalyzingMusicPage} />
       <Route path="/verify-email" component={VerifyEmail} />

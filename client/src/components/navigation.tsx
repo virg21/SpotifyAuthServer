@@ -9,6 +9,7 @@ const Navigation: React.FC = () => {
   if (
     location === '/' || 
     location === '/connect-spotify' || 
+    location === '/connect-spotify-direct' || 
     location === '/auth-success' ||
     location === '/analyzing-music'
   ) {

@@ -281,6 +281,20 @@ const WelcomePage: React.FC = () => {
           </p>
         </div>
         
+        {/* Direct Spotify connection for testing */}
+        <div className="w-full mt-8">
+          <button 
+            type="button" 
+            className="btn-secondary w-full"
+            onClick={() => setLocation('/connect-spotify-direct')}
+          >
+            Skip Phone Verification - Connect Spotify Directly
+          </button>
+          <p className="text-xs text-white/60 mt-1 text-center">
+            This option bypasses phone verification for testing purposes
+          </p>
+        </div>
+        
         {/* Terms and privacy note */}
         <p className="text-xs text-white/70 mt-8 text-center">
           By continuing, you agree to our Terms of Service and Privacy Policy

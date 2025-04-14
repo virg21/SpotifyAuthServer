@@ -4,7 +4,16 @@ import { Loader2 } from "lucide-react";
 export default function ConnectSpotifyDirectPage() {
   useEffect(() => {
     // Redirect to the Spotify auth server
-    window.location.href = 'http://localhost:3000';
+    // In Replit, we need to use the same domain but port 3000
+    // Unfortunately, Replit doesn't support multiple ports on the same domain
+    // for external access, so we'll just use localhost:3000 for testing
+    const spotifyAuthUrl = 'http://localhost:3000';
+    
+    console.log('Redirecting to Spotify auth server at:', spotifyAuthUrl);
+    
+    // For demonstration purposes only - in a real implementation,
+    // we'd handle this differently with a proper API route
+    window.location.href = spotifyAuthUrl;
   }, []);
 
   return (
