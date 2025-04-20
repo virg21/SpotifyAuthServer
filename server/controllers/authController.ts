@@ -203,15 +203,40 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
       }
     } catch (userError: any) {
       console.error('Error creating/updating user:', userError);
-      return res.status(500).json({ 
-        error: 'Failed to create or update user', 
-        details: userError.message 
-      });
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Spotify Authentication Error</title>
+            <script>
+              // Redirect to the connect-spotify page on the client side with error message
+              window.location.href = "/connect-spotify?error=${encodeURIComponent('Failed to create or update user: ' + userError.message)}";
+            </script>
+          </head>
+          <body>
+            <p>Authentication failed: Failed to create or update user: ${userError.message}. Redirecting...</p>
+          </body>
+        </html>
+      `);
     }
     
     // Set user session
     if (!user) {
-      return res.status(500).json({ error: 'Failed to create or update user' });
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Spotify Authentication Error</title>
+            <script>
+              // Redirect to the connect-spotify page on the client side with error message
+              window.location.href = "/connect-spotify?error=${encodeURIComponent('Failed to create or update user')}";
+            </script>
+          </head>
+          <body>
+            <p>Authentication failed: Failed to create or update user. Redirecting...</p>
+          </body>
+        </html>
+      `);
     }
     
     req.session.userId = user.id;
@@ -236,10 +261,21 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error handling Spotify callback:', error);
     const errorDetail = error.message || 'Unknown error';
-    res.status(500).json({ 
-      error: 'Failed to complete Spotify authentication',
-      details: errorDetail
-    });
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Spotify Authentication Error</title>
+          <script>
+            // Redirect to the connect-spotify page on the client side with error message
+            window.location.href = "/connect-spotify?error=${encodeURIComponent('Failed to complete Spotify authentication: ' + errorDetail)}";
+          </script>
+        </head>
+        <body>
+          <p>Authentication failed: ${errorDetail}. Redirecting...</p>
+        </body>
+      </html>
+    `);
   }
 };
 
