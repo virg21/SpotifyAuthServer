@@ -51,11 +51,39 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
     // Check for errors from Spotify
     if (error) {
       console.error('Spotify returned an error:', error);
-      return res.status(400).json({ error: `Authentication failed: ${error}` });
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Spotify Authentication Error</title>
+            <script>
+              // Redirect to the connect-spotify page on the client side with error message
+              window.location.href = "/connect-spotify?error=${encodeURIComponent(error as string)}";
+            </script>
+          </head>
+          <body>
+            <p>Authentication failed: ${error}. Redirecting...</p>
+          </body>
+        </html>
+      `);
     }
     
     if (!code) {
-      return res.status(400).json({ error: 'Authorization code is required' });
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Spotify Authentication Error</title>
+            <script>
+              // Redirect to the connect-spotify page on the client side with error message
+              window.location.href = "/connect-spotify?error=Authorization%20code%20is%20required";
+            </script>
+          </head>
+          <body>
+            <p>Authentication failed: Authorization code is required. Redirecting...</p>
+          </body>
+        </html>
+      `);
     }
     
     console.log('Processing Spotify callback with code');
@@ -67,10 +95,21 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
       console.log('Token exchange successful, received access token');
     } catch (tokenError: any) {
       console.error('Failed to exchange code for tokens:', tokenError.message);
-      return res.status(500).json({ 
-        error: 'Failed to exchange code for tokens', 
-        details: tokenError.message 
-      });
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Spotify Authentication Error</title>
+            <script>
+              // Redirect to the connect-spotify page on the client side with error message
+              window.location.href = "/connect-spotify?error=${encodeURIComponent('Failed to exchange code for tokens: ' + tokenError.message)}";
+            </script>
+          </head>
+          <body>
+            <p>Authentication failed: ${tokenError.message}. Redirecting...</p>
+          </body>
+        </html>
+      `);
     }
     
     const { access_token, refresh_token, expires_in } = tokenResponse;
@@ -82,10 +121,21 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
       console.log('Retrieved Spotify profile for user:', spotifyProfile.id);
     } catch (profileError: any) {
       console.error('Failed to get Spotify profile:', profileError.message);
-      return res.status(500).json({ 
-        error: 'Failed to get Spotify user profile', 
-        details: profileError.message 
-      });
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Spotify Authentication Error</title>
+            <script>
+              // Redirect to the connect-spotify page on the client side with error message
+              window.location.href = "/connect-spotify?error=${encodeURIComponent('Failed to get Spotify profile: ' + profileError.message)}";
+            </script>
+          </head>
+          <body>
+            <p>Authentication failed: Failed to get Spotify profile: ${profileError.message}. Redirecting...</p>
+          </body>
+        </html>
+      `);
     }
     
     // Check if user with this Spotify ID already exists
@@ -167,8 +217,22 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
     req.session.userId = user.id;
     console.log('User session set, serving success page');
     
-    // Redirect to analyzing music page
-    res.redirect('/analyzing-music');
+    // Instead of redirecting, send an HTML response that will automatically redirect
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Spotify Authentication Successful</title>
+          <script>
+            // Redirect to the analyzing music page on the client side
+            window.location.href = "/analyzing-music";
+          </script>
+        </head>
+        <body>
+          <p>Authentication successful! Redirecting...</p>
+        </body>
+      </html>
+    `);
   } catch (error: any) {
     console.error('Error handling Spotify callback:', error);
     const errorDetail = error.message || 'Unknown error';
