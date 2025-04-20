@@ -165,11 +165,86 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
     }
     
     req.session.userId = user.id;
-    console.log('User session set, redirecting to auth success page');
+    console.log('User session set, serving success page');
     
-    // Redirect to auth success page
-    // Use absolute path to ensure we're serving the client app
-    res.redirect(`/?redirect=auth-success&userId=${user.id}`);
+    // Instead of redirecting, serve a simple success page with auto-redirect
+    const successHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Spotify Authentication Successful</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #00442C;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          }
+          h1 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #F73E7C;
+          }
+          p {
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin: 0 auto 2rem;
+            opacity: 0.9;
+          }
+          .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #F73E7C;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          button {
+            background: #F73E7C;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+          }
+          button:hover {
+            opacity: 0.9;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Spotify Authentication Successful!</h1>
+        <p>Your Spotify account has been connected successfully.</p>
+        <div class="loader"></div>
+        <p>Redirecting you back to the app...</p>
+        <script>
+          // Redirect to the analyzing music page after a short delay
+          setTimeout(() => {
+            window.location.href = '/analyzing-music';
+          }, 2000);
+        </script>
+      </body>
+      </html>
+    `;
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.send(successHtml);
   } catch (error: any) {
     console.error('Error handling Spotify callback:', error);
     const errorDetail = error.message || 'Unknown error';
