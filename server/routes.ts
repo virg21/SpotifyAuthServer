@@ -63,10 +63,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 404 handler for API routes only
   app.use('/api/*', notFound);
 
-  // Special route for Spotify auth standalone page
+  // Simple redirect to Spotify auth API
   app.get('/spotify-auth', (req, res) => {
-    const path = require('path');
-    res.sendFile(path.resolve(__dirname, '../public/spotify-auth.html'));
+    res.redirect('/api/auth/spotify/login');
   });
 
   // Global error handler
