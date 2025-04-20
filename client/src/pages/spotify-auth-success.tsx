@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -9,7 +9,7 @@ export default function SpotifyAuthSuccess() {
   const [loading, setLoading] = useState(true);
   const [authStatus, setAuthStatus] = useState<{success: boolean, userId?: number, timestamp?: number} | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function SpotifyAuthSuccess() {
           
           // Redirect to analyzing music page after 2 seconds
           setTimeout(() => {
-            navigate('/analyzing-music');
+            setLocation('/analyzing-music');
           }, 2000);
         } else {
           // Auth failed
@@ -49,10 +49,10 @@ export default function SpotifyAuthSuccess() {
     };
 
     checkAuthStatus();
-  }, [navigate, toast]);
+  }, [setLocation, toast]);
 
   const handleRetry = () => {
-    navigate('/connect-spotify');
+    setLocation('/connect-spotify');
   };
 
   if (loading) {

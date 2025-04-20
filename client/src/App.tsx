@@ -14,6 +14,7 @@ import WelcomePage from "@/pages/welcome";
 import AnalyzingMusicPage from "@/pages/analyzing-music";
 import VerifyEmail from "@/pages/VerifyEmail";
 import SpotifyTroubleshooter from "@/pages/spotify-troubleshooter";
+import SpotifyAuthSuccess from "@/pages/spotify-auth-success";
 import Navigation from "@/components/navigation";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/connect-spotify" component={ConnectSpotify} />
       <Route path="/connect-spotify-direct" component={ConnectSpotifyDirect} />
       <Route path="/auth-success" component={AuthSuccess} />
+      <Route path="/spotify-auth-success" component={SpotifyAuthSuccess} />
       <Route path="/analyzing-music" component={AnalyzingMusicPage} />
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/spotify-troubleshooter" component={SpotifyTroubleshooter} />
