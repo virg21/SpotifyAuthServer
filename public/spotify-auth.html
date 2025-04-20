@@ -37,7 +37,6 @@
       height: 40px;
       animation: spin 1s linear infinite;
       margin: 20px auto;
-      display: none; /* Initially hidden */
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
@@ -64,127 +63,37 @@
       font-size: 1.1rem;
       color: #F73E7C;
     }
-    #success-container {
-      display: none;
-    }
-    #error-container {
-      display: none;
-      color: #ff6b6b;
-    }
-    .emoji {
-      font-size: 3rem;
-      margin: 20px 0;
-    }
   </style>
 </head>
 <body>
   <h1>Quincy + Spotify</h1>
   
-  <div id="login-container">
+  <div id="content">
     <p>Connect Quincy to your Spotify account to discover events that match your music taste.</p>
-    <button id="connect-button" class="btn">Connect Spotify Account</button>
-  </div>
-
-  <div id="loading-container" style="display: none;">
-    <p>Connecting to Spotify...</p>
-    <div class="loader" style="display: block;"></div>
-    <p id="status-message">Please wait while we connect to Spotify</p>
-  </div>
-
-  <div id="success-container">
-    <div class="emoji">🎉</div>
-    <h1>Connected Successfully!</h1>
-    <p>Your Spotify account has been linked successfully.</p>
-    <div class="loader"></div>
-    <p>Redirecting you to the app...</p>
-  </div>
-
-  <div id="error-container">
-    <div class="emoji">😕</div>
-    <h1>Connection Failed</h1>
-    <p id="error-message">There was a problem connecting to Spotify.</p>
-    <button id="retry-button" class="btn">Try Again</button>
+    <a href="/api/auth/spotify/login" class="btn" id="connect-button">Connect Spotify Account</a>
+    <p class="status-message">You'll be redirected to Spotify to authorize access</p>
   </div>
 
   <script>
-    // Function to parse URL query parameters
-    function getQueryParams() {
-      const params = {};
-      const queryString = window.location.search;
-      const urlParams = new URLSearchParams(queryString);
+    document.getElementById('connect-button').addEventListener('click', function(event) {
+      // Prevent default navigation
+      event.preventDefault();
       
-      for (const [key, value] of urlParams.entries()) {
-        params[key] = value;
-      }
+      // Hide the button and show loading state
+      this.style.display = 'none';
       
-      return params;
-    }
-
-    // Check if we're returning from Spotify OAuth
-    const params = getQueryParams();
-    
-    if (params.code) {
-      // Show loading state
-      document.getElementById('login-container').style.display = 'none';
-      document.getElementById('loading-container').style.display = 'block';
-      document.getElementById('status-message').innerText = 'Processing Spotify authentication...';
+      // Create and show loader
+      var loader = document.createElement('div');
+      loader.className = 'loader';
+      document.getElementById('content').appendChild(loader);
       
-      // Exchange code for access token through our backend
-      fetch('/api/auth/spotify/callback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: params.code, state: params.state })
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Authentication failed');
-        }
-        return response.json();
-      })
-      .then(data => {
-        // Success - show success message
-        document.getElementById('loading-container').style.display = 'none';
-        document.getElementById('success-container').style.display = 'block';
-        
-        // Redirect to app after a short delay
-        setTimeout(() => {
-          window.location.href = '/analyzing-music';
-        }, 2000);
-      })
-      .catch(error => {
-        // Error - show error message
-        document.getElementById('loading-container').style.display = 'none';
-        document.getElementById('error-container').style.display = 'block';
-        document.getElementById('error-message').innerText = 'Sorry, there was a problem connecting to Spotify: ' + error.message;
-      });
-    }
-
-    // Handle connect button click
-    document.getElementById('connect-button').addEventListener('click', function() {
-      // Show loading state
-      document.getElementById('login-container').style.display = 'none';
-      document.getElementById('loading-container').style.display = 'block';
+      // Update status message
+      document.querySelector('.status-message').textContent = 'Redirecting to Spotify...';
       
-      // Get Spotify login URL from our backend
-      fetch('/api/auth/spotify/login-url')
-        .then(response => response.json())
-        .then(data => {
-          // Redirect to Spotify authorization page
-          window.location.href = data.url;
-        })
-        .catch(error => {
-          // Error - show error message
-          document.getElementById('loading-container').style.display = 'none';
-          document.getElementById('error-container').style.display = 'block';
-          document.getElementById('error-message').innerText = 'Sorry, we couldn\'t connect to Spotify: ' + error.message;
-        });
-    });
-
-    // Handle retry button click
-    document.getElementById('retry-button').addEventListener('click', function() {
-      // Reset UI
-      document.getElementById('error-container').style.display = 'none';
-      document.getElementById('login-container').style.display = 'block';
+      // Redirect after a short delay
+      setTimeout(function() {
+        window.location.href = '/api/auth/spotify/login';
+      }, 1000);
     });
   </script>
 </body>
