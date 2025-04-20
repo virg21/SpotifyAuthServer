@@ -4,8 +4,8 @@ import { Loader2, ExternalLink } from "lucide-react";
 export default function ConnectSpotifyDirectPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   
-  // Using our own backend proxy route instead of direct URL
-  const spotifyAuthUrl = '/api/auth/spotify/login';
+  // Using our standalone auth page instead of direct API endpoint
+  const spotifyAuthUrl = '/spotify-auth';
   
   const handleConnectSpotify = () => {
     setIsRedirecting(true);

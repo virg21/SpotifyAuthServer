@@ -63,6 +63,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 404 handler for API routes only
   app.use('/api/*', notFound);
 
+  // Special route for Spotify auth standalone page
+  app.get('/spotify-auth', (req, res) => {
+    res.sendFile(require('path').resolve(__dirname, '../public/spotify-auth.html'));
+  });
+
   // Global error handler
   app.use(errorHandler);
 
