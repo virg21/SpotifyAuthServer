@@ -168,7 +168,8 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
     console.log('User session set, redirecting to auth success page');
     
     // Redirect to auth success page
-    res.redirect(`/auth-success?userId=${user.id}`);
+    // Use absolute path to ensure we're serving the client app
+    res.redirect(`/?redirect=auth-success&userId=${user.id}`);
   } catch (error: any) {
     console.error('Error handling Spotify callback:', error);
     const errorDetail = error.message || 'Unknown error';
