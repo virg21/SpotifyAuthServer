@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useLocation } from 'wouter';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useRoute } from 'wouter';
 import MobileLayout from '@/components/MobileLayout';
 import { PhoneIcon, MapPin, Check, Loader } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +14,20 @@ const WelcomePage: React.FC = () => {
   const [codeSent, setCodeSent] = useState(false);
   const [userId, setUserId] = useState(0);
   const { toast } = useToast();
+  
+  // Check for redirect from Spotify OAuth callback 
+  useEffect(() => {
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get('redirect');
+    const userIdParam = urlParams.get('userId');
+    
+    // If we have a redirect and userId from Spotify OAuth
+    if (redirect === 'auth-success' && userIdParam) {
+      console.log('Redirecting from Spotify OAuth callback to auth-success page');
+      setLocation(`/auth-success?userId=${userIdParam}`);
+    }
+  }, [setLocation]);
   
   // Get current time for the status bar
   const getCurrentTime = () => {
