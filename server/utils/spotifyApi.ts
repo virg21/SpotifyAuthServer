@@ -15,7 +15,7 @@ export const getSpotifyCredentials = () => {
   
   // ALWAYS use the exact URI registered in the Spotify Developer Dashboard
   // This must match *exactly*, including the protocol, domain, and path
-  const redirectUri = 'https://a281afa7-4a4c-4f92-9abd-267d37eb0f32-00-p2mnlbtql2f1.janeway.replit.dev/api/auth/spotify/callback';
+  const redirectUri = 'https://workspace.vliste415.repl.co/api/auth/callback';
   
   // Log that we're using the hardcoded URI
   console.log('Using hardcoded Spotify redirect URI:', redirectUri);
