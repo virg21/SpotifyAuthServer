@@ -6,6 +6,19 @@ import { sendVerificationCode } from './verificationController';
 import { twilioClient } from '../utils/twilioClient';
 import { z } from 'zod';
 import axios from 'axios';
+import session from 'express-session';
+
+// Extend Session interface for TypeScript
+declare module 'express-session' {
+  interface SessionData {
+    userId?: number;
+    spotifyAuth?: {
+      success: boolean;
+      userId: number;
+      timestamp: number;
+    }
+  }
+}
 
 /**
  * Initiates the Spotify authorization flow
@@ -242,22 +255,24 @@ export const handleSpotifyCallback = async (req: Request, res: Response) => {
     req.session.userId = user.id;
     console.log('User session set, serving success page');
     
-    // Instead of redirecting, send an HTML response that will automatically redirect
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Spotify Authentication Successful</title>
-          <script>
-            // Redirect to the analyzing music page on the client side
-            window.location.href = "/analyzing-music";
-          </script>
-        </head>
-        <body>
-          <p>Authentication successful! Redirecting...</p>
-        </body>
-      </html>
-    `);
+    // Store user ID in session so we can redirect properly
+    req.session.spotifyAuth = {
+      success: true,
+      userId: user.id,
+      timestamp: Date.now()
+    };
+    
+    console.log('Spotify auth successful - redirecting to success page');
+    
+    // Save the session before redirecting
+    req.session.save((err) => {
+      if (err) {
+        console.error('Error saving session:', err);
+      }
+      
+      // Direct redirect to our client-side success page that will check auth status
+      return res.redirect('/spotify-auth-success');
+    });
   } catch (error: any) {
     console.error('Error handling Spotify callback:', error);
     const errorDetail = error.message || 'Unknown error';
@@ -489,6 +504,29 @@ export const login = async (req: Request, res: Response) => {
     console.error('Error logging in:', error);
     res.status(500).json({ error: 'Failed to login' });
   }
+};
+
+/**
+ * Check Spotify authentication status
+ * @route GET /api/auth/spotify/status
+ */
+export const checkSpotifyAuthStatus = async (req: Request, res: Response) => {
+  console.log('Checking Spotify auth status');
+  
+  // Check if we have Spotify auth data in the session
+  if (req.session.spotifyAuth) {
+    console.log('Found spotifyAuth in session:', req.session.spotifyAuth);
+    
+    // Return the auth status
+    return res.status(200).json({
+      success: true, 
+      userId: req.session.spotifyAuth.userId,
+      timestamp: req.session.spotifyAuth.timestamp
+    });
+  }
+  
+  // No Spotify auth data found
+  return res.status(200).json({ success: false });
 };
 
 /**

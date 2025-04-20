@@ -11,6 +11,7 @@ router.post('/phone/verify', verificationController.verifyCode);
 // Spotify OAuth routes
 router.get('/spotify/login', authController.initiateSpotifyLogin);
 router.get('/spotify/callback', authController.handleSpotifyCallback);
+router.get('/spotify/status', authController.checkSpotifyAuthStatus);
 router.post('/spotify/refresh', authController.refreshSpotifyToken);
 
 // User authentication routes
